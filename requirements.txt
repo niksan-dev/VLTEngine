@@ -1,0 +1,17 @@
+Clean and rebuild
+
+Delete the old CMake build:
+
+Remove-Item -Recurse -Force build
+
+Then:
+
+cmake -S . -B build -G Ninja
+
+Then:
+
+cmake --build build
+
+Finally:
+
+.\build\YsecEngine.exe
