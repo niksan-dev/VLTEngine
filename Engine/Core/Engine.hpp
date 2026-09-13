@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Display/DisplayManager.hpp>
 #include <Window/WindowManager.hpp>
 
 namespace VLTEngine::Core
@@ -21,6 +22,7 @@ namespace VLTEngine::Core
     private:
         bool m_initialized;
 
+        VLTEngine::Display::DisplayManager m_displayManager;
         VLTEngine::Window::WindowManager m_windowManager;
     };
 

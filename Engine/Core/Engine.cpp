@@ -1,6 +1,7 @@
 #include <Core/Engine.hpp>
 
 #include <SDL2/SDL.h>
+
 #include <iostream>
 
 namespace VLTEngine::Core
@@ -21,8 +22,9 @@ namespace VLTEngine::Core
         if (m_initialized)
             return true;
 
-        std::cout << "VLTEngine initializing..."
-                  << std::endl;
+        std::cout
+            << "VLTEngine initializing..."
+            << std::endl;
 
         // -------------------------------------------------
         // Initialize SDL
@@ -39,6 +41,49 @@ namespace VLTEngine::Core
         }
 
         // -------------------------------------------------
+        // Initialize Display Manager
+        // -------------------------------------------------
+
+        if (!m_displayManager.initialize())
+        {
+            SDL_Quit();
+            return false;
+        }
+
+        // -------------------------------------------------
+        // Print detected displays
+        // -------------------------------------------------
+
+        std::cout
+            << "Detected displays: "
+            << m_displayManager.getDisplayCount()
+            << std::endl;
+
+        for (const auto &display :
+             m_displayManager.getDisplays())
+        {
+            std::cout
+                << "  Display "
+                << display.id + 1
+                << ": "
+                << display.name
+                << " | "
+                << display.width
+                << "x"
+                << display.height
+                << " | Position: ("
+                << display.x
+                << ", "
+                << display.y
+                << ")";
+
+            if (display.primary)
+                std::cout << " | PRIMARY";
+
+            std::cout << std::endl;
+        }
+
+        // -------------------------------------------------
         // Create Window
         // -------------------------------------------------
 
@@ -47,7 +92,9 @@ namespace VLTEngine::Core
                 1280,
                 720))
         {
+            m_displayManager.shutdown();
             SDL_Quit();
+
             return false;
         }
 
@@ -67,20 +114,47 @@ namespace VLTEngine::Core
 
         bool running = true;
 
-        SDL_Event event;
+        SDL_Event event{};
 
         while (running)
         {
             while (SDL_PollEvent(&event))
             {
+                // -------------------------------------------------
+                // Application quit
+                // -------------------------------------------------
+
                 if (event.type == SDL_QUIT)
                 {
                     running = false;
                 }
+
+                // -------------------------------------------------
+                // Display events
+                // -------------------------------------------------
+
+                m_displayManager.handleEvent(&event);
             }
 
+            // -------------------------------------------------
             // Update
+            // -------------------------------------------------
+
+            // Future:
+            // Scene update
+            // Entity update
+            // Physics
+            // Animation
+            // Game logic
+
+            // -------------------------------------------------
             // Render
+            // -------------------------------------------------
+
+            // Future:
+            // Renderer
+            // Render layers
+            // Display routing
         }
     }
 
@@ -93,7 +167,11 @@ namespace VLTEngine::Core
             << "VLTEngine shutting down..."
             << std::endl;
 
+        // Reverse initialization order
+
         m_windowManager.shutdown();
+
+        m_displayManager.shutdown();
 
         SDL_Quit();
 
