@@ -9,6 +9,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# =========================================================
+# SDL2
+# =========================================================
+
 set(SDL2_ROOT "C:/msys64/ucrt64")
 
 set(SDL2_INCLUDE_DIR
@@ -19,11 +23,27 @@ set(SDL2_LIBRARY
     "${SDL2_ROOT}/lib/libSDL2.dll.a"
 )
 
-add_executable(VLTEngine
-    src/main.cpp
+# =========================================================
+# Source Files
+# =========================================================
 
-    Engine/Core/Engine.cpp
+file(GLOB_RECURSE VLTEngine_SOURCES
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/Engine/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
+
+# =========================================================
+# Executable
+# =========================================================
+
+add_executable(VLTEngine
+    ${VLTEngine_SOURCES}
+)
+
+# =========================================================
+# Include Directories
+# =========================================================
 
 target_include_directories(VLTEngine
     PRIVATE
@@ -31,10 +51,18 @@ target_include_directories(VLTEngine
         ${CMAKE_CURRENT_SOURCE_DIR}/Engine
 )
 
+# =========================================================
+# Libraries
+# =========================================================
+
 target_link_libraries(VLTEngine
     PRIVATE
         ${SDL2_LIBRARY}
 )
+
+# =========================================================
+# Windows
+# =========================================================
 
 if(WIN32)
     target_compile_definitions(VLTEngine

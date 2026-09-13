@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Window/WindowManager.hpp>
+
 namespace VLTEngine::Core
 {
 
@@ -18,6 +20,8 @@ namespace VLTEngine::Core
 
     private:
         bool m_initialized;
+
+        VLTEngine::Window::WindowManager m_windowManager;
     };
 
 } // namespace VLTEngine::Core

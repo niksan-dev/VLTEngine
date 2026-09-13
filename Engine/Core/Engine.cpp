@@ -1,5 +1,6 @@
 #include <Core/Engine.hpp>
 
+#include <SDL2/SDL.h>
 #include <iostream>
 
 namespace VLTEngine::Core
@@ -20,22 +21,41 @@ namespace VLTEngine::Core
         if (m_initialized)
             return true;
 
-        std::cout << "VLTEngine initializing..." << std::endl;
+        std::cout << "VLTEngine initializing..."
+                  << std::endl;
 
-        // Engine initialization will be expanded here:
-        //
-        // 1. Platform
-        // 2. SDL
-        // 3. Window
-        // 4. Display
-        // 5. Graphics
-        // 6. Input
-        // 7. Audio
-        // 8. Resource systems
+        // -------------------------------------------------
+        // Initialize SDL
+        // -------------------------------------------------
+
+        if (SDL_Init(SDL_INIT_VIDEO) != 0)
+        {
+            std::cerr
+                << "SDL initialization failed: "
+                << SDL_GetError()
+                << std::endl;
+
+            return false;
+        }
+
+        // -------------------------------------------------
+        // Create Window
+        // -------------------------------------------------
+
+        if (!m_windowManager.initialize(
+                "VLTEngine",
+                1280,
+                720))
+        {
+            SDL_Quit();
+            return false;
+        }
 
         m_initialized = true;
 
-        std::cout << "VLTEngine initialized successfully!" << std::endl;
+        std::cout
+            << "VLTEngine initialized successfully!"
+            << std::endl;
 
         return true;
     }
@@ -45,9 +65,23 @@ namespace VLTEngine::Core
         if (!m_initialized)
             return;
 
-        std::cout << "VLTEngine running..." << std::endl;
+        bool running = true;
 
-        // Main engine loop will be implemented here.
+        SDL_Event event;
+
+        while (running)
+        {
+            while (SDL_PollEvent(&event))
+            {
+                if (event.type == SDL_QUIT)
+                {
+                    running = false;
+                }
+            }
+
+            // Update
+            // Render
+        }
     }
 
     void Engine::shutdown()
@@ -55,9 +89,13 @@ namespace VLTEngine::Core
         if (!m_initialized)
             return;
 
-        std::cout << "VLTEngine shutting down..." << std::endl;
+        std::cout
+            << "VLTEngine shutting down..."
+            << std::endl;
 
-        // Shutdown systems in reverse initialization order.
+        m_windowManager.shutdown();
+
+        SDL_Quit();
 
         m_initialized = false;
     }

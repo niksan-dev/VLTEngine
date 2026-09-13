@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Clean VLTEngine",
+            "type": "shell",
+            "command": "if (Test-Path build) { Remove-Item -Recurse -Force build }",
+            "options": {
+                "shell": {
+                    "executable": "powershell.exe",
+                    "args": [
+                        "-NoProfile",
+                        "-Command"
+                    ]
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Configure VLTEngine",
+            "type": "shell",
+            "command": "cmake -S . -B build -G Ninja",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build VLTEngine",
+            "type": "shell",
+            "command": "cmake --build build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Clean Configure Build VLTEngine",
+            "dependsOn": [
+                "Clean VLTEngine",
+                "Configure VLTEngine",
+                "Build VLTEngine"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        }
+    ]
+}
