@@ -1,10 +1,17 @@
-
 #pragma once
 
-struct SDL_Window;
+#include <SDL2/SDL.h>
+
+#include <vector>
 
 namespace VLTEngine::Window
 {
+
+    struct WindowInfo
+    {
+        int displayId = -1;
+        SDL_Window *window = nullptr;
+    };
 
     class WindowManager
     {
@@ -17,15 +24,18 @@ namespace VLTEngine::Window
 
         bool initialize(
             const char *title,
-            int width,
-            int height);
+            const std::vector<SDL_Rect> &displayBounds);
 
         void shutdown();
 
-        SDL_Window *getWindow() const;
+        SDL_Window *getWindow(int displayId) const;
+
+        const std::vector<WindowInfo> &getWindows() const;
+
+        int getWindowCount() const;
 
     private:
-        SDL_Window *m_window;
+        std::vector<WindowInfo> m_windows;
     };
 
 } // namespace VLTEngine::Window

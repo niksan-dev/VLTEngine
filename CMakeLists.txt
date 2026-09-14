@@ -2,12 +2,14 @@ cmake_minimum_required(VERSION 3.20)
 
 project(VLTEngine
     VERSION 0.1.0
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # =========================================================
 # SDL2
@@ -24,7 +26,24 @@ set(SDL2_LIBRARY
 )
 
 # =========================================================
-# Source Files
+# GLAD
+# =========================================================
+
+set(GLAD_ROOT
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/GLAD"
+)
+
+add_library(GLAD STATIC
+    "${GLAD_ROOT}/src/glad.c"
+)
+
+target_include_directories(GLAD
+    PUBLIC
+        "${GLAD_ROOT}/include"
+)
+
+# =========================================================
+# VLTEngine Source Files
 # =========================================================
 
 file(GLOB_RECURSE VLTEngine_SOURCES
@@ -34,7 +53,7 @@ file(GLOB_RECURSE VLTEngine_SOURCES
 )
 
 # =========================================================
-# Executable
+# VLTEngine Executable
 # =========================================================
 
 add_executable(VLTEngine
@@ -58,6 +77,8 @@ target_include_directories(VLTEngine
 target_link_libraries(VLTEngine
     PRIVATE
         ${SDL2_LIBRARY}
+        GLAD
+        opengl32
 )
 
 # =========================================================

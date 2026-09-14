@@ -2,6 +2,9 @@
 
 #include <Display/DisplayManager.hpp>
 #include <Window/WindowManager.hpp>
+#include <Graphics/Renderer.hpp>
+
+#include <memory>
 
 namespace VLTEngine::Core
 {
@@ -24,6 +27,8 @@ namespace VLTEngine::Core
 
         VLTEngine::Display::DisplayManager m_displayManager;
         VLTEngine::Window::WindowManager m_windowManager;
+
+        std::unique_ptr<VLTEngine::Graphics::Renderer> m_renderer;
     };
 
 } // namespace VLTEngine::Core
