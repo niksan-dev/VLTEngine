@@ -50,6 +50,10 @@ namespace VLTEngine::Graphics
             float z,
             float w) = 0;
 
+        virtual void setMat4(
+            const std::string &name,
+            const float *value) = 0;
+
     protected:
         Shader() = default;
     };

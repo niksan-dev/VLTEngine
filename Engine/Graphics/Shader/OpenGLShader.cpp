@@ -193,6 +193,26 @@ namespace VLTEngine::Graphics
             w);
     }
 
+    void OpenGLShader::setMat4(
+        const std::string &name,
+        const float *value)
+    {
+        if (value == nullptr)
+            return;
+
+        const int location =
+            getUniformLocation(name);
+
+        if (location < 0)
+            return;
+
+        glUniformMatrix4fv(
+            location,
+            1,
+            GL_FALSE,
+            value);
+    }
+
     unsigned int OpenGLShader::getProgramId() const
     {
         return m_programId;

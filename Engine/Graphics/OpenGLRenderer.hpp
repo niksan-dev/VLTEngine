@@ -2,7 +2,8 @@
 
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Mesh/OpenGLMesh.hpp>
-#include <Graphics/Shader/OpenGLShader.hpp>
+#include <Graphics/Material/OpenGLMaterial.hpp>
+#include <Components/Transform.hpp>
 
 #include <SDL2/SDL.h>
 
@@ -42,6 +43,9 @@ namespace VLTEngine::Graphics
 
         std::unique_ptr<OpenGLMesh> m_mesh;
         std::unique_ptr<OpenGLShader> m_shader;
+        std::unique_ptr<OpenGLMaterial> m_material;
+
+        VLTEngine::Components::Transform m_transform;
 
         bool m_initialized;
     };

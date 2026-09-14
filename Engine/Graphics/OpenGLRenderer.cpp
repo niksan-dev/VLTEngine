@@ -3,6 +3,11 @@
 #include <Graphics/Mesh/MeshData.hpp>
 #include <Graphics/Mesh/OpenGLMesh.hpp>
 #include <Graphics/Shader/OpenGLShader.hpp>
+#include <Graphics/Material/OpenGLMaterial.hpp>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <glad/glad.h>
 
@@ -44,9 +49,7 @@ namespace VLTEngine::Graphics
         m_windows = windows;
 
         /*
-         * Configure the OpenGL context.
-         *
-         * VLTEngine currently targets OpenGL 3.3 Core.
+         * Configure OpenGL 3.3 Core.
          */
         SDL_GL_SetAttribute(
             SDL_GL_CONTEXT_MAJOR_VERSION,
@@ -65,7 +68,7 @@ namespace VLTEngine::Graphics
             1);
 
         /*
-         * Create one OpenGL context for each window/display.
+         * Create one OpenGL context for every window/display.
          */
         for (std::size_t i = 0;
              i < m_windows.size();
@@ -124,9 +127,7 @@ namespace VLTEngine::Graphics
         }
 
         /*
-         * Load OpenGL functions through GLAD.
-         *
-         * This project uses GLAD1-style generated loader.
+         * Load OpenGL functions.
          */
         if (!gladLoadGL())
         {
@@ -161,13 +162,7 @@ namespace VLTEngine::Graphics
             << std::endl;
 
         /*
-         * Create a simple test triangle.
-         *
-         * Vertex layout:
-         *
-         *   position : 3 floats
-         *   normal   : 3 floats
-         *   texCoord : 2 floats
+         * Create test triangle.
          */
         MeshData meshData;
 
@@ -213,6 +208,41 @@ namespace VLTEngine::Graphics
             return false;
         }
 
+        /*
+         * Create material using the shader.
+         *
+         * Material does not own the shader.
+         */
+        m_material =
+            std::make_unique<OpenGLMaterial>(
+                m_shader.get());
+
+        /*
+         * Set the material color.
+         *
+         * This is now the material's responsibility.
+         */
+        m_material->setColor(
+            1.0f,
+            0.2f,
+            0.2f,
+            1.0f);
+
+        m_transform.position =
+            glm::vec3(
+                0.20f,
+                0.0f,
+                0.0f);
+
+        m_transform.rotation.z =
+            glm::radians(10.0f);
+
+        m_transform.scale =
+            glm::vec3(
+                0.80f,
+                0.80f,
+                0.80f);
+
         m_initialized = true;
 
         std::cout
@@ -225,13 +255,19 @@ namespace VLTEngine::Graphics
     void OpenGLRenderer::shutdown()
     {
         /*
-         * GPU resources must be destroyed while an OpenGL
-         * context is still available.
+         * GPU resources must be destroyed while an
+         * OpenGL context is still available.
          */
         if (!m_contexts.empty())
         {
             makeCurrent(0);
         }
+
+        /*
+         * Material must be destroyed before the shader
+         * it references.
+         */
+        m_material.reset();
 
         m_shader.reset();
         m_mesh.reset();
@@ -359,21 +395,22 @@ namespace VLTEngine::Graphics
                 GL_COLOR_BUFFER_BIT |
                 GL_DEPTH_BUFFER_BIT);
 
-            if (m_shader &&
-                m_mesh)
+            if (m_material &&
+                m_mesh &&
+                m_shader)
             {
-                m_shader->bind();
+                m_material->bind();
 
-                m_shader->setVec4(
-                    "uColor",
-                    1.0f,
-                    0.2f,
-                    0.2f,
-                    1.0f);
+                glm::mat4 modelMatrix =
+                    m_transform.getModelMatrix();
+
+                m_shader->setMat4(
+                    "uModel",
+                    glm::value_ptr(modelMatrix));
 
                 m_mesh->draw();
 
-                m_shader->unbind();
+                m_material->unbind();
             }
 
             SDL_GL_SwapWindow(window);

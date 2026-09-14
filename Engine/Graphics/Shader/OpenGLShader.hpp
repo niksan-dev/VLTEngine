@@ -53,6 +53,10 @@ namespace VLTEngine::Graphics
             float z,
             float w) override;
 
+        void setMat4(
+            const std::string &name,
+            const float *value) override;
+
         int getUniformLocation(
             const std::string &name) const;
 
