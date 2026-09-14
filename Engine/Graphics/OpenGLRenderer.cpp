@@ -229,6 +229,78 @@ namespace VLTEngine::Graphics
             1.0f);
 
         // ---------------------------------------------------------
+        // Triangle geometry
+        // ---------------------------------------------------------
+
+        const float vertices[] =
+            {
+                0.0f, 0.5f, 0.0f,
+                -0.5f, -0.5f, 0.0f,
+                0.5f, -0.5f, 0.0f};
+
+        // ---------------------------------------------------------
+        // Create Vertex Array
+        // ---------------------------------------------------------
+
+        m_vertexArray =
+            std::make_unique<OpenGLVertexArray>();
+
+        m_vertexArray->bind();
+
+        // ---------------------------------------------------------
+        // Create Vertex Buffer
+        // ---------------------------------------------------------
+
+        m_vertexBuffer =
+            std::make_unique<OpenGLVertexBuffer>(
+                vertices,
+                sizeof(vertices));
+
+        m_vertexBuffer->bind();
+
+        // ---------------------------------------------------------
+        // Vertex position layout
+        // ---------------------------------------------------------
+
+        glEnableVertexAttribArray(0);
+
+        glVertexAttribPointer(
+            0,
+            3,
+            GL_FLOAT,
+            GL_FALSE,
+            3 * sizeof(float),
+            nullptr);
+
+        // ---------------------------------------------------------
+        // Create shader
+        // ---------------------------------------------------------
+
+        m_shader =
+            std::make_unique<OpenGLShader>();
+
+        if (!m_shader->loadFromFiles(
+                "Assets/Shaders/basic.vert",
+                "Assets/Shaders/basic.frag"))
+        {
+            std::cerr
+                << "Failed to load basic shader."
+                << std::endl;
+
+            m_shader.reset();
+            m_vertexBuffer.reset();
+            m_vertexArray.reset();
+
+            shutdown();
+
+            return false;
+        }
+
+        std::cout
+            << "Triangle rendering resources initialized!"
+            << std::endl;
+
+        // ---------------------------------------------------------
         // Renderer initialized
         // ---------------------------------------------------------
 
@@ -249,6 +321,14 @@ namespace VLTEngine::Graphics
                 << "Shutting down OpenGLRenderer..."
                 << std::endl;
         }
+
+        // ---------------------------------------------------------
+        // Destroy rendering resources
+        // ---------------------------------------------------------
+
+        m_shader.reset();
+        m_vertexBuffer.reset();
+        m_vertexArray.reset();
 
         // ---------------------------------------------------------
         // Destroy OpenGL contexts
@@ -400,8 +480,25 @@ namespace VLTEngine::Graphics
                 GL_COLOR_BUFFER_BIT);
 
             // -----------------------------------------------------
-            // Present framebuffer
+            // Draw triangle
             // -----------------------------------------------------
+
+            if (m_shader &&
+                m_vertexArray)
+            {
+                m_shader->bind();
+
+                m_vertexArray->bind();
+
+                glDrawArrays(
+                    GL_TRIANGLES,
+                    0,
+                    3);
+
+                m_vertexArray->unbind();
+
+                m_shader->unbind();
+            }
 
             SDL_GL_SwapWindow(window);
         }

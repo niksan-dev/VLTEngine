@@ -1,5 +1,9 @@
 #pragma once
+#include <Graphics/Buffer/OpenGLVertexArray.hpp>
+#include <Graphics/Buffer/OpenGLVertexBuffer.hpp>
+#include <Graphics/Shader/OpenGLShader.hpp>
 
+#include <memory>
 #include <Graphics/Renderer.hpp>
 
 #include <SDL2/SDL.h>
@@ -36,6 +40,10 @@ namespace VLTEngine::Graphics
     private:
         std::vector<OpenGLContextInfo> m_contexts;
         std::vector<SDL_Window *> m_windows;
+
+        std::unique_ptr<OpenGLVertexArray> m_vertexArray;
+        std::unique_ptr<OpenGLVertexBuffer> m_vertexBuffer;
+        std::unique_ptr<OpenGLShader> m_shader;
 
         bool m_initialized;
     };
