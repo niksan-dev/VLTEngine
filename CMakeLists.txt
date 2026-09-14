@@ -25,6 +25,8 @@ set(SDL2_LIBRARY
     "${SDL2_ROOT}/lib/libSDL2.dll.a"
 )
 
+set(GLM_ROOT "C:/msys64/ucrt64/include")
+
 # =========================================================
 # GLAD
 # =========================================================
@@ -67,6 +69,7 @@ add_executable(VLTEngine
 target_include_directories(VLTEngine
     PRIVATE
         ${SDL2_INCLUDE_DIR}
+        ${GLM_ROOT}
         ${CMAKE_CURRENT_SOURCE_DIR}/Engine
 )
 

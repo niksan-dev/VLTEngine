@@ -364,6 +364,13 @@ namespace VLTEngine::Graphics
             {
                 m_shader->bind();
 
+                m_shader->setVec4(
+                    "uColor",
+                    1.0f,
+                    0.2f,
+                    0.2f,
+                    1.0f);
+
                 m_mesh->draw();
 
                 m_shader->unbind();
