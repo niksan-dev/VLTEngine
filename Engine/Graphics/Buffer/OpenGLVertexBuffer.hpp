@@ -16,14 +16,25 @@ namespace VLTEngine::Graphics
 
         ~OpenGLVertexBuffer() override;
 
-        OpenGLVertexBuffer(const OpenGLVertexBuffer &) = delete;
-        OpenGLVertexBuffer &operator=(const OpenGLVertexBuffer &) = delete;
+        OpenGLVertexBuffer(
+            const OpenGLVertexBuffer &) = delete;
+
+        OpenGLVertexBuffer &operator=(
+            const OpenGLVertexBuffer &) = delete;
 
         void bind() override;
         void unbind() override;
 
+        void setLayout(
+            const VertexBufferLayout &layout) override;
+
+        const VertexBufferLayout &
+        getLayout() const override;
+
     private:
         unsigned int m_rendererId;
+
+        VertexBufferLayout m_layout;
     };
 
-} // namespace VLTEngine::Graphics
+}

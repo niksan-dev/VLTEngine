@@ -19,47 +19,21 @@ namespace VLTEngine::Graphics
         if (m_programId != 0)
         {
             glDeleteProgram(m_programId);
-
             m_programId = 0;
         }
-    }
-
-    unsigned int OpenGLShader::getProgramId() const
-    {
-        return m_programId;
     }
 
     bool OpenGLShader::loadFromSource(
         const std::string &vertexSource,
         const std::string &fragmentSource)
     {
-        // ---------------------------------------------------------
-        // Remove previously loaded shader
-        // ---------------------------------------------------------
-
-        if (m_programId != 0)
-        {
-            glDeleteProgram(m_programId);
-            m_programId = 0;
-        }
-
-        // ---------------------------------------------------------
-        // Compile vertex shader
-        // ---------------------------------------------------------
-
         const unsigned int vertexShader =
             compileShader(
                 GL_VERTEX_SHADER,
                 vertexSource);
 
         if (vertexShader == 0)
-        {
             return false;
-        }
-
-        // ---------------------------------------------------------
-        // Compile fragment shader
-        // ---------------------------------------------------------
 
         const unsigned int fragmentShader =
             compileShader(
@@ -69,23 +43,13 @@ namespace VLTEngine::Graphics
         if (fragmentShader == 0)
         {
             glDeleteShader(vertexShader);
-
             return false;
         }
-
-        // ---------------------------------------------------------
-        // Link shader program
-        // ---------------------------------------------------------
 
         const bool linked =
             linkProgram(
                 vertexShader,
                 fragmentShader);
-
-        // ---------------------------------------------------------
-        // Individual shaders are no longer needed
-        // after linking.
-        // ---------------------------------------------------------
 
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
@@ -97,10 +61,6 @@ namespace VLTEngine::Graphics
         const std::string &vertexPath,
         const std::string &fragmentPath)
     {
-        // ---------------------------------------------------------
-        // Read vertex shader
-        // ---------------------------------------------------------
-
         std::ifstream vertexFile(vertexPath);
 
         if (!vertexFile.is_open())
@@ -112,17 +72,6 @@ namespace VLTEngine::Graphics
 
             return false;
         }
-
-        std::stringstream vertexStream;
-
-        vertexStream
-            << vertexFile.rdbuf();
-
-        vertexFile.close();
-
-        // ---------------------------------------------------------
-        // Read fragment shader
-        // ---------------------------------------------------------
 
         std::ifstream fragmentFile(fragmentPath);
 
@@ -136,16 +85,11 @@ namespace VLTEngine::Graphics
             return false;
         }
 
+        std::stringstream vertexStream;
         std::stringstream fragmentStream;
 
-        fragmentStream
-            << fragmentFile.rdbuf();
-
-        fragmentFile.close();
-
-        // ---------------------------------------------------------
-        // Compile and link
-        // ---------------------------------------------------------
+        vertexStream << vertexFile.rdbuf();
+        fragmentStream << fragmentFile.rdbuf();
 
         return loadFromSource(
             vertexStream.str(),
@@ -154,9 +98,6 @@ namespace VLTEngine::Graphics
 
     void OpenGLShader::bind()
     {
-        if (m_programId == 0)
-            return;
-
         glUseProgram(m_programId);
     }
 
@@ -165,21 +106,115 @@ namespace VLTEngine::Graphics
         glUseProgram(0);
     }
 
+    void OpenGLShader::setInt(
+        const std::string &name,
+        int value)
+    {
+        const int location =
+            getUniformLocation(name);
+
+        if (location == -1)
+            return;
+
+        glUniform1i(
+            location,
+            value);
+    }
+
+    void OpenGLShader::setFloat(
+        const std::string &name,
+        float value)
+    {
+        const int location =
+            getUniformLocation(name);
+
+        if (location == -1)
+            return;
+
+        glUniform1f(
+            location,
+            value);
+    }
+
+    void OpenGLShader::setVec2(
+        const std::string &name,
+        float x,
+        float y)
+    {
+        const int location =
+            getUniformLocation(name);
+
+        if (location == -1)
+            return;
+
+        glUniform2f(
+            location,
+            x,
+            y);
+    }
+
+    void OpenGLShader::setVec3(
+        const std::string &name,
+        float x,
+        float y,
+        float z)
+    {
+        const int location =
+            getUniformLocation(name);
+
+        if (location == -1)
+            return;
+
+        glUniform3f(
+            location,
+            x,
+            y,
+            z);
+    }
+
+    void OpenGLShader::setVec4(
+        const std::string &name,
+        float x,
+        float y,
+        float z,
+        float w)
+    {
+        const int location =
+            getUniformLocation(name);
+
+        if (location == -1)
+            return;
+
+        glUniform4f(
+            location,
+            x,
+            y,
+            z,
+            w);
+    }
+
+    unsigned int OpenGLShader::getProgramId() const
+    {
+        return m_programId;
+    }
+
+    int OpenGLShader::getUniformLocation(
+        const std::string &name) const
+    {
+        if (m_programId == 0)
+            return -1;
+
+        return glGetUniformLocation(
+            m_programId,
+            name.c_str());
+    }
+
     unsigned int OpenGLShader::compileShader(
         unsigned int type,
         const std::string &source)
     {
         const unsigned int shader =
             glCreateShader(type);
-
-        if (shader == 0)
-        {
-            std::cerr
-                << "Failed to create OpenGL shader."
-                << std::endl;
-
-            return 0;
-        }
 
         const char *sourceCode =
             source.c_str();
@@ -191,10 +226,6 @@ namespace VLTEngine::Graphics
             nullptr);
 
         glCompileShader(shader);
-
-        // ---------------------------------------------------------
-        // Check compilation status
-        // ---------------------------------------------------------
 
         int success = 0;
 
@@ -212,24 +243,21 @@ namespace VLTEngine::Graphics
                 GL_INFO_LOG_LENGTH,
                 &logLength);
 
-            std::string errorLog;
+            std::string infoLog(
+                static_cast<std::size_t>(
+                    logLength),
+                '\0');
 
-            if (logLength > 0)
-            {
-                errorLog.resize(
-                    static_cast<size_t>(logLength));
-
-                glGetShaderInfoLog(
-                    shader,
-                    logLength,
-                    nullptr,
-                    errorLog.data());
-            }
+            glGetShaderInfoLog(
+                shader,
+                logLength,
+                nullptr,
+                infoLog.data());
 
             std::cerr
-                << "OpenGL shader compilation failed:"
+                << "Shader compilation failed:"
                 << std::endl
-                << errorLog
+                << infoLog
                 << std::endl;
 
             glDeleteShader(shader);
@@ -247,15 +275,6 @@ namespace VLTEngine::Graphics
         const unsigned int program =
             glCreateProgram();
 
-        if (program == 0)
-        {
-            std::cerr
-                << "Failed to create OpenGL shader program."
-                << std::endl;
-
-            return false;
-        }
-
         glAttachShader(
             program,
             vertexShader);
@@ -265,10 +284,6 @@ namespace VLTEngine::Graphics
             fragmentShader);
 
         glLinkProgram(program);
-
-        // ---------------------------------------------------------
-        // Check linking status
-        // ---------------------------------------------------------
 
         int success = 0;
 
@@ -286,24 +301,21 @@ namespace VLTEngine::Graphics
                 GL_INFO_LOG_LENGTH,
                 &logLength);
 
-            std::string errorLog;
+            std::string infoLog(
+                static_cast<std::size_t>(
+                    logLength),
+                '\0');
 
-            if (logLength > 0)
-            {
-                errorLog.resize(
-                    static_cast<size_t>(logLength));
-
-                glGetProgramInfoLog(
-                    program,
-                    logLength,
-                    nullptr,
-                    errorLog.data());
-            }
+            glGetProgramInfoLog(
+                program,
+                logLength,
+                nullptr,
+                infoLog.data());
 
             std::cerr
-                << "OpenGL shader program linking failed:"
+                << "Shader linking failed:"
                 << std::endl
-                << errorLog
+                << infoLog
                 << std::endl;
 
             glDeleteProgram(program);
@@ -311,9 +323,14 @@ namespace VLTEngine::Graphics
             return false;
         }
 
+        if (m_programId != 0)
+        {
+            glDeleteProgram(m_programId);
+        }
+
         m_programId = program;
 
         return true;
     }
 
-} // namespace VLTEngine::Graphics
+}

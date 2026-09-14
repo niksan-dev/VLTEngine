@@ -1,9 +1,12 @@
 #pragma once
 
 #include <Graphics/Buffer/VertexArray.hpp>
+#include <Graphics/Buffer/VertexBuffer.hpp>
 
 namespace VLTEngine::Graphics
 {
+
+    class OpenGLIndexBuffer;
 
     class OpenGLVertexArray : public VertexArray
     {
@@ -17,8 +20,16 @@ namespace VLTEngine::Graphics
         void bind() override;
         void unbind() override;
 
+        void addVertexBuffer(
+            VertexBuffer *vertexBuffer);
+
+        void setIndexBuffer(
+            OpenGLIndexBuffer *indexBuffer);
+
     private:
         unsigned int m_rendererId;
+
+        OpenGLIndexBuffer *m_indexBuffer;
     };
 
-} // namespace VLTEngine::Graphics
+}

@@ -27,6 +27,35 @@ namespace VLTEngine::Graphics
         void bind() override;
         void unbind() override;
 
+        void setInt(
+            const std::string &name,
+            int value) override;
+
+        void setFloat(
+            const std::string &name,
+            float value) override;
+
+        void setVec2(
+            const std::string &name,
+            float x,
+            float y) override;
+
+        void setVec3(
+            const std::string &name,
+            float x,
+            float y,
+            float z) override;
+
+        void setVec4(
+            const std::string &name,
+            float x,
+            float y,
+            float z,
+            float w) override;
+
+        int getUniformLocation(
+            const std::string &name) const;
+
         unsigned int getProgramId() const;
 
     private:
@@ -38,7 +67,8 @@ namespace VLTEngine::Graphics
             unsigned int vertexShader,
             unsigned int fragmentShader);
 
+    private:
         unsigned int m_programId;
     };
 
-} // namespace VLTEngine::Graphics
+}

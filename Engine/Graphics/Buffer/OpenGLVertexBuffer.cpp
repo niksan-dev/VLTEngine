@@ -51,4 +51,16 @@ namespace VLTEngine::Graphics
             0);
     }
 
-} // namespace VLTEngine::Graphics
+    void OpenGLVertexBuffer::setLayout(
+        const VertexBufferLayout &layout)
+    {
+        m_layout = layout;
+    }
+
+    const VertexBufferLayout &
+    OpenGLVertexBuffer::getLayout() const
+    {
+        return m_layout;
+    }
+
+}
