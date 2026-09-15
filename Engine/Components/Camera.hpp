@@ -1,16 +1,20 @@
 #pragma once
 
+#include <Entity/Component.hpp>
+
 #include <glm/glm.hpp>
 
 namespace VLTEngine::Components
 {
 
     class Camera
+        : public VLTEngine::Entity::Component
     {
     public:
-        Camera();
+        explicit Camera(
+            VLTEngine::Entity::Entity *entity = nullptr);
 
-        ~Camera() = default;
+        ~Camera() override = default;
 
         Camera(const Camera &) = default;
         Camera &operator=(const Camera &) = default;

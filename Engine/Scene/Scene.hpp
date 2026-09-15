@@ -1,0 +1,58 @@
+#pragma once
+
+#include <Entity/Entity.hpp>
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+namespace VLTEngine::Scene
+{
+
+    class Scene
+    {
+    public:
+        Scene();
+        ~Scene();
+
+        Scene(const Scene &) = delete;
+        Scene &operator=(const Scene &) = delete;
+
+        VLTEngine::Entity::Entity &createEntity(
+            const std::string &name = "Entity");
+
+        bool destroyEntity(
+            VLTEngine::Entity::EntityId id);
+
+        VLTEngine::Entity::Entity *
+        getEntity(
+            VLTEngine::Entity::EntityId id);
+
+        const VLTEngine::Entity::Entity *
+        getEntity(
+            VLTEngine::Entity::EntityId id) const;
+
+        const std::vector<
+            VLTEngine::Entity::Entity *> &
+        getEntities() const;
+
+        std::size_t getEntityCount() const;
+
+        void clear();
+
+    private:
+        VLTEngine::Entity::EntityId m_nextEntityId;
+
+        std::unordered_map<
+            VLTEngine::Entity::EntityId,
+            std::unique_ptr<VLTEngine::Entity::Entity>>
+            m_entities;
+
+        std::vector<
+            VLTEngine::Entity::Entity *>
+            m_entityList;
+    };
+
+}

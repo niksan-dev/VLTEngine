@@ -1,9 +1,12 @@
 #pragma once
 
+#include <Components/Camera.hpp>
+
+#include <Scene/Scene.hpp>
+
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Mesh/OpenGLMesh.hpp>
 #include <Graphics/Material/OpenGLMaterial.hpp>
-#include <Components/Transform.hpp>
 
 #include <SDL2/SDL.h>
 
@@ -45,7 +48,11 @@ namespace VLTEngine::Graphics
         std::unique_ptr<OpenGLShader> m_shader;
         std::unique_ptr<OpenGLMaterial> m_material;
 
-        VLTEngine::Components::Transform m_transform;
+        std::unique_ptr<
+            VLTEngine::Scene::Scene>
+            m_scene;
+
+        VLTEngine::Components::Camera m_camera;
 
         bool m_initialized;
     };

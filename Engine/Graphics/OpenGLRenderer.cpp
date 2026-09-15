@@ -1,17 +1,20 @@
 #include <Graphics/OpenGLRenderer.hpp>
 
+#include <Components/MeshRenderer.hpp>
+#include <Components/Transform.hpp>
+
 #include <Graphics/Mesh/MeshData.hpp>
 #include <Graphics/Mesh/OpenGLMesh.hpp>
 #include <Graphics/Shader/OpenGLShader.hpp>
 #include <Graphics/Material/OpenGLMaterial.hpp>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <glad/glad.h>
 
 #include <SDL2/SDL.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
 #include <memory>
@@ -48,9 +51,10 @@ namespace VLTEngine::Graphics
 
         m_windows = windows;
 
-        /*
-         * Configure OpenGL 3.3 Core.
-         */
+        // =========================================================
+        // OpenGL Context Configuration
+        // =========================================================
+
         SDL_GL_SetAttribute(
             SDL_GL_CONTEXT_MAJOR_VERSION,
             3);
@@ -67,14 +71,16 @@ namespace VLTEngine::Graphics
             SDL_GL_DOUBLEBUFFER,
             1);
 
-        /*
-         * Create one OpenGL context for every window/display.
-         */
+        // =========================================================
+        // Create OpenGL Contexts
+        // =========================================================
+
         for (std::size_t i = 0;
              i < m_windows.size();
              ++i)
         {
-            SDL_Window *window = m_windows[i];
+            SDL_Window *window =
+                m_windows[i];
 
             if (window == nullptr)
             {
@@ -114,21 +120,24 @@ namespace VLTEngine::Graphics
             contextInfo.context =
                 context;
 
-            m_contexts.push_back(contextInfo);
+            m_contexts.push_back(
+                contextInfo);
         }
 
-        /*
-         * Make the first context current.
-         */
+        // =========================================================
+        // Make First Context Current
+        // =========================================================
+
         if (!makeCurrent(0))
         {
             shutdown();
             return false;
         }
 
-        /*
-         * Load OpenGL functions.
-         */
+        // =========================================================
+        // Initialize GLAD
+        // =========================================================
+
         if (!gladLoadGL())
         {
             std::cerr
@@ -161,9 +170,10 @@ namespace VLTEngine::Graphics
                    glGetString(GL_VERSION))
             << std::endl;
 
-        /*
-         * Create test triangle.
-         */
+        // =========================================================
+        // Test Mesh
+        // =========================================================
+
         MeshData meshData;
 
         meshData.vertices =
@@ -190,9 +200,10 @@ namespace VLTEngine::Graphics
             std::make_unique<OpenGLMesh>(
                 meshData);
 
-        /*
-         * Create shader.
-         */
+        // =========================================================
+        // Shader
+        // =========================================================
+
         m_shader =
             std::make_unique<OpenGLShader>();
 
@@ -208,40 +219,76 @@ namespace VLTEngine::Graphics
             return false;
         }
 
-        /*
-         * Create material using the shader.
-         *
-         * Material does not own the shader.
-         */
+        // =========================================================
+        // Material
+        // =========================================================
+
         m_material =
             std::make_unique<OpenGLMaterial>(
                 m_shader.get());
 
-        /*
-         * Set the material color.
-         *
-         * This is now the material's responsibility.
-         */
         m_material->setColor(
             1.0f,
             0.2f,
             0.2f,
             1.0f);
 
-        m_transform.position =
+        // =========================================================
+        // Scene
+        // =========================================================
+
+        m_scene =
+            std::make_unique<
+                VLTEngine::Scene::Scene>();
+
+        // =========================================================
+        // Triangle Entity
+        // =========================================================
+
+        auto &triangle =
+            m_scene->createEntity(
+                "Triangle");
+
+        // ---------------------------------------------------------
+        // Transform Component
+        // ---------------------------------------------------------
+
+        auto &transform =
+            triangle.addComponent<
+                VLTEngine::Components::Transform>();
+
+        transform.position =
             glm::vec3(
                 0.20f,
                 0.0f,
                 0.0f);
 
-        m_transform.rotation.z =
+        transform.rotation.z =
             glm::radians(10.0f);
 
-        m_transform.scale =
+        transform.scale =
             glm::vec3(
                 0.80f,
                 0.80f,
                 0.80f);
+
+        // ---------------------------------------------------------
+        // MeshRenderer Component
+        // ---------------------------------------------------------
+
+        auto &meshRenderer =
+            triangle.addComponent<
+                VLTEngine::Components::MeshRenderer>();
+
+        meshRenderer.setMesh(
+            m_mesh.get());
+
+        meshRenderer.setMaterial(
+            m_material.get());
+
+        // =========================================================
+        // Renderer Initialized
+        // =========================================================
 
         m_initialized = true;
 
@@ -254,28 +301,36 @@ namespace VLTEngine::Graphics
 
     void OpenGLRenderer::shutdown()
     {
-        /*
-         * GPU resources must be destroyed while an
-         * OpenGL context is still available.
-         */
         if (!m_contexts.empty())
         {
             makeCurrent(0);
         }
 
-        /*
-         * Material must be destroyed before the shader
-         * it references.
-         */
+        // =========================================================
+        // Destroy Scene
+        //
+        // MeshRenderer contains non-owning references to
+        // Mesh and Material, so destroy Scene first.
+        // =========================================================
+
+        m_scene.reset();
+
+        // =========================================================
+        // Destroy GPU Resources
+        // =========================================================
+
         m_material.reset();
 
         m_shader.reset();
+
         m_mesh.reset();
 
-        /*
-         * Destroy OpenGL contexts.
-         */
-        for (auto &contextInfo : m_contexts)
+        // =========================================================
+        // Destroy OpenGL Contexts
+        // =========================================================
+
+        for (auto &contextInfo :
+             m_contexts)
         {
             if (contextInfo.context != nullptr)
             {
@@ -297,7 +352,8 @@ namespace VLTEngine::Graphics
     {
         if (displayId < 0 ||
             displayId >=
-                static_cast<int>(m_contexts.size()))
+                static_cast<int>(
+                    m_contexts.size()))
         {
             std::cerr
                 << "Invalid display ID: "
@@ -308,7 +364,8 @@ namespace VLTEngine::Graphics
         }
 
         if (displayId >=
-            static_cast<int>(m_windows.size()))
+            static_cast<int>(
+                m_windows.size()))
         {
             std::cerr
                 << "No window for display ID: "
@@ -358,6 +415,10 @@ namespace VLTEngine::Graphics
         if (!m_initialized)
             return;
 
+        // =========================================================
+        // Render Every Display
+        // =========================================================
+
         for (std::size_t i = 0;
              i < m_windows.size();
              ++i)
@@ -379,11 +440,19 @@ namespace VLTEngine::Graphics
                 &width,
                 &height);
 
+            // =====================================================
+            // Viewport
+            // =====================================================
+
             glViewport(
                 0,
                 0,
                 width,
                 height);
+
+            // =====================================================
+            // Clear
+            // =====================================================
 
             glClearColor(
                 0.08f,
@@ -395,25 +464,145 @@ namespace VLTEngine::Graphics
                 GL_COLOR_BUFFER_BIT |
                 GL_DEPTH_BUFFER_BIT);
 
-            if (m_material &&
-                m_mesh &&
+            // =====================================================
+            // Scene Rendering
+            // =====================================================
+
+            if (m_scene &&
                 m_shader)
             {
-                m_material->bind();
+                // -------------------------------------------------
+                // Camera Projection
+                // -------------------------------------------------
 
-                glm::mat4 modelMatrix =
-                    m_transform.getModelMatrix();
+                const float aspectRatio =
+                    height > 0
+                        ? static_cast<float>(width) /
+                              static_cast<float>(height)
+                        : 1.0f;
 
-                m_shader->setMat4(
-                    "uModel",
-                    glm::value_ptr(modelMatrix));
+                m_camera.setPerspective(
+                    glm::radians(60.0f),
+                    aspectRatio,
+                    0.1f,
+                    100.0f);
 
-                m_mesh->draw();
+                const glm::mat4 viewMatrix =
+                    m_camera.getViewMatrix();
 
-                m_material->unbind();
+                const glm::mat4 projectionMatrix =
+                    m_camera.getProjectionMatrix();
+
+                // -------------------------------------------------
+                // Iterate Scene Entities
+                // -------------------------------------------------
+
+                for (auto *entity :
+                     m_scene->getEntities())
+                {
+                    if (entity == nullptr)
+                        continue;
+
+                    if (!entity->isActive())
+                        continue;
+
+                    // ---------------------------------------------
+                    // Transform
+                    // ---------------------------------------------
+
+                    auto *transform =
+                        entity->getComponent<
+                            VLTEngine::Components::Transform>();
+
+                    // ---------------------------------------------
+                    // MeshRenderer
+                    // ---------------------------------------------
+
+                    auto *meshRenderer =
+                        entity->getComponent<
+                            VLTEngine::Components::MeshRenderer>();
+
+                    if (transform == nullptr ||
+                        meshRenderer == nullptr)
+                    {
+                        continue;
+                    }
+
+                    if (!meshRenderer->isRenderable())
+                        continue;
+
+                    // ---------------------------------------------
+                    // Material
+                    // ---------------------------------------------
+
+                    auto *material =
+                        meshRenderer->getMaterial();
+
+                    if (material == nullptr)
+                        continue;
+
+                    // ---------------------------------------------
+                    // Bind Material
+                    // ---------------------------------------------
+
+                    material->bind();
+
+                    // ---------------------------------------------
+                    // Model Matrix
+                    // ---------------------------------------------
+
+                    const glm::mat4 modelMatrix =
+                        transform->getModelMatrix();
+
+                    m_shader->setMat4(
+                        "uModel",
+                        glm::value_ptr(
+                            modelMatrix));
+
+                    // ---------------------------------------------
+                    // View Matrix
+                    // ---------------------------------------------
+
+                    m_shader->setMat4(
+                        "uView",
+                        glm::value_ptr(
+                            viewMatrix));
+
+                    // ---------------------------------------------
+                    // Projection Matrix
+                    // ---------------------------------------------
+
+                    m_shader->setMat4(
+                        "uProjection",
+                        glm::value_ptr(
+                            projectionMatrix));
+
+                    // ---------------------------------------------
+                    // Draw Mesh
+                    // ---------------------------------------------
+
+                    auto *mesh =
+                        meshRenderer->getMesh();
+
+                    if (mesh != nullptr)
+                    {
+                        mesh->draw();
+                    }
+
+                    // ---------------------------------------------
+                    // Unbind Material
+                    // ---------------------------------------------
+
+                    material->unbind();
+                }
             }
 
-            SDL_GL_SwapWindow(window);
+            // =====================================================
+            // Present
+            // =====================================================
+
+            SDL_GL_SwapWindow(
+                window);
         }
     }
 

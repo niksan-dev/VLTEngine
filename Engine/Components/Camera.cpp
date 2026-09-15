@@ -5,8 +5,10 @@
 namespace VLTEngine::Components
 {
 
-    Camera::Camera()
-        : m_position(0.0f, 0.0f, 3.0f),
+    Camera::Camera(
+        VLTEngine::Entity::Entity *entity)
+        : Component(entity),
+          m_position(0.0f, 0.0f, 3.0f),
           m_rotation(0.0f, 0.0f, 0.0f),
           m_fieldOfView(glm::radians(60.0f)),
           m_aspectRatio(16.0f / 9.0f),

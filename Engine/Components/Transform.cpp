@@ -5,8 +5,10 @@
 namespace VLTEngine::Components
 {
 
-    Transform::Transform()
-        : position(0.0f, 0.0f, 0.0f),
+    Transform::Transform(
+        VLTEngine::Entity::Entity *entity)
+        : Component(entity),
+          position(0.0f, 0.0f, 0.0f),
           rotation(0.0f, 0.0f, 0.0f),
           scale(1.0f, 1.0f, 1.0f)
     {
