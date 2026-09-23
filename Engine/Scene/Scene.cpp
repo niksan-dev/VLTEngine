@@ -1,10 +1,14 @@
 #include <Scene/Scene.hpp>
 
+#include <algorithm>
+#include <utility>
+
 namespace VLTEngine::Scene
 {
 
     Scene::Scene()
-        : m_nextEntityId(1)
+        : m_nextEntityId(1),
+          m_activeCamera(nullptr)
     {
     }
 
@@ -13,24 +17,21 @@ namespace VLTEngine::Scene
         clear();
     }
 
-    VLTEngine::Entity::Entity &
-    Scene::createEntity(
+    VLTEngine::Entity::Entity &Scene::createEntity(
         const std::string &name)
     {
-        const auto entityId =
-            m_nextEntityId++;
+        const auto id = m_nextEntityId++;
 
         auto entity =
             std::make_unique<
                 VLTEngine::Entity::Entity>(
-                entityId,
+                id,
                 name);
 
-        auto *entityPtr =
-            entity.get();
+        auto *entityPtr = entity.get();
 
         m_entities.emplace(
-            entityId,
+            id,
             std::move(entity));
 
         m_entityList.push_back(
@@ -51,28 +52,42 @@ namespace VLTEngine::Scene
         auto *entity =
             iterator->second.get();
 
-        for (auto listIterator =
-                 m_entityList.begin();
-             listIterator !=
-             m_entityList.end();
-             ++listIterator)
-        {
-            if (*listIterator == entity)
-            {
-                m_entityList.erase(
-                    listIterator);
+        // ---------------------------------------------------------
+        // Clear Active Camera
+        // ---------------------------------------------------------
 
-                break;
-            }
+        if (m_activeCamera == entity)
+        {
+            m_activeCamera = nullptr;
         }
 
-        m_entities.erase(iterator);
+        // ---------------------------------------------------------
+        // Remove From Entity List
+        // ---------------------------------------------------------
+
+        auto listIterator =
+            std::find(
+                m_entityList.begin(),
+                m_entityList.end(),
+                entity);
+
+        if (listIterator != m_entityList.end())
+        {
+            m_entityList.erase(
+                listIterator);
+        }
+
+        // ---------------------------------------------------------
+        // Destroy Entity
+        // ---------------------------------------------------------
+
+        m_entities.erase(
+            iterator);
 
         return true;
     }
 
-    VLTEngine::Entity::Entity *
-    Scene::getEntity(
+    VLTEngine::Entity::Entity *Scene::getEntity(
         VLTEngine::Entity::EntityId id)
     {
         auto iterator =
@@ -84,8 +99,7 @@ namespace VLTEngine::Scene
         return iterator->second.get();
     }
 
-    const VLTEngine::Entity::Entity *
-    Scene::getEntity(
+    const VLTEngine::Entity::Entity *Scene::getEntity(
         VLTEngine::Entity::EntityId id) const
     {
         auto iterator =
@@ -106,13 +120,66 @@ namespace VLTEngine::Scene
 
     std::size_t Scene::getEntityCount() const
     {
-        return m_entities.size();
+        return m_entityList.size();
     }
 
     void Scene::clear()
     {
+        m_activeCamera = nullptr;
+
         m_entityList.clear();
+
         m_entities.clear();
+
+        m_nextEntityId = 1;
+    }
+
+    // =============================================================
+    // Active Camera
+    // =============================================================
+
+    void Scene::setActiveCamera(
+        VLTEngine::Entity::Entity *entity)
+    {
+        if (entity == nullptr)
+        {
+            m_activeCamera = nullptr;
+            return;
+        }
+
+        // ---------------------------------------------------------
+        // Only allow an Entity owned by this Scene.
+        // ---------------------------------------------------------
+
+        const auto entityId =
+            entity->getId();
+
+        auto iterator =
+            m_entities.find(entityId);
+
+        if (iterator == m_entities.end())
+        {
+            return;
+        }
+
+        if (iterator->second.get() != entity)
+        {
+            return;
+        }
+
+        m_activeCamera = entity;
+    }
+
+    VLTEngine::Entity::Entity *
+    Scene::getActiveCamera()
+    {
+        return m_activeCamera;
+    }
+
+    const VLTEngine::Entity::Entity *
+    Scene::getActiveCamera() const
+    {
+        return m_activeCamera;
     }
 
 }

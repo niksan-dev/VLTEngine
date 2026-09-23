@@ -15,10 +15,15 @@ namespace VLTEngine::Scene
     {
     public:
         Scene();
+
         ~Scene();
 
         Scene(const Scene &) = delete;
         Scene &operator=(const Scene &) = delete;
+
+        // ---------------------------------------------------------
+        // Entity Management
+        // ---------------------------------------------------------
 
         VLTEngine::Entity::Entity &createEntity(
             const std::string &name = "Entity");
@@ -26,12 +31,10 @@ namespace VLTEngine::Scene
         bool destroyEntity(
             VLTEngine::Entity::EntityId id);
 
-        VLTEngine::Entity::Entity *
-        getEntity(
+        VLTEngine::Entity::Entity *getEntity(
             VLTEngine::Entity::EntityId id);
 
-        const VLTEngine::Entity::Entity *
-        getEntity(
+        const VLTEngine::Entity::Entity *getEntity(
             VLTEngine::Entity::EntityId id) const;
 
         const std::vector<
@@ -42,17 +45,38 @@ namespace VLTEngine::Scene
 
         void clear();
 
+        // ---------------------------------------------------------
+        // Active Camera
+        // ---------------------------------------------------------
+
+        void setActiveCamera(
+            VLTEngine::Entity::Entity *entity);
+
+        VLTEngine::Entity::Entity *getActiveCamera();
+
+        const VLTEngine::Entity::Entity *getActiveCamera() const;
+
     private:
         VLTEngine::Entity::EntityId m_nextEntityId;
 
         std::unordered_map<
             VLTEngine::Entity::EntityId,
-            std::unique_ptr<VLTEngine::Entity::Entity>>
+            std::unique_ptr<
+                VLTEngine::Entity::Entity>>
             m_entities;
 
         std::vector<
             VLTEngine::Entity::Entity *>
             m_entityList;
+
+        // ---------------------------------------------------------
+        // Active Camera
+        //
+        // Non-owning pointer.
+        // The Scene owns the Entity through m_entities.
+        // ---------------------------------------------------------
+
+        VLTEngine::Entity::Entity *m_activeCamera;
     };
 
 }

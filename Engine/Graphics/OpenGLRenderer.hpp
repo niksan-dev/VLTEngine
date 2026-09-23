@@ -1,12 +1,11 @@
 #pragma once
 
-#include <Components/Camera.hpp>
-
 #include <Scene/Scene.hpp>
 
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Mesh/OpenGLMesh.hpp>
 #include <Graphics/Material/OpenGLMaterial.hpp>
+#include <Graphics/Shader/OpenGLShader.hpp>
 
 #include <SDL2/SDL.h>
 
@@ -35,6 +34,7 @@ namespace VLTEngine::Graphics
             const std::vector<SDL_Window *> &windows) override;
 
         void shutdown() override;
+
         void render() override;
 
         bool makeCurrent(
@@ -42,17 +42,26 @@ namespace VLTEngine::Graphics
 
     private:
         std::vector<OpenGLContextInfo> m_contexts;
+
         std::vector<SDL_Window *> m_windows;
 
+        // ---------------------------------------------------------
+        // Test / Runtime Graphics Resources
+        // ---------------------------------------------------------
+
         std::unique_ptr<OpenGLMesh> m_mesh;
+
         std::unique_ptr<OpenGLShader> m_shader;
+
         std::unique_ptr<OpenGLMaterial> m_material;
+
+        // ---------------------------------------------------------
+        // Scene
+        // ---------------------------------------------------------
 
         std::unique_ptr<
             VLTEngine::Scene::Scene>
             m_scene;
-
-        VLTEngine::Components::Camera m_camera;
 
         bool m_initialized;
     };

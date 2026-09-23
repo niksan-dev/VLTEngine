@@ -1,5 +1,6 @@
 #include <Graphics/OpenGLRenderer.hpp>
 
+#include <Components/Camera.hpp>
 #include <Components/MeshRenderer.hpp>
 #include <Components/Transform.hpp>
 
@@ -250,7 +251,7 @@ namespace VLTEngine::Graphics
                 "Triangle");
 
         // ---------------------------------------------------------
-        // Transform Component
+        // Triangle Transform
         // ---------------------------------------------------------
 
         auto &transform =
@@ -273,7 +274,7 @@ namespace VLTEngine::Graphics
                 0.80f);
 
         // ---------------------------------------------------------
-        // MeshRenderer Component
+        // Triangle MeshRenderer
         // ---------------------------------------------------------
 
         auto &meshRenderer =
@@ -285,6 +286,61 @@ namespace VLTEngine::Graphics
 
         meshRenderer.setMaterial(
             m_material.get());
+
+        // =========================================================
+        // Main Camera Entity
+        // =========================================================
+
+        auto &mainCamera =
+            m_scene->createEntity(
+                "MainCamera");
+
+        // ---------------------------------------------------------
+        // Camera Transform
+        // ---------------------------------------------------------
+
+        auto &cameraTransform =
+            mainCamera.addComponent<
+                VLTEngine::Components::Transform>();
+
+        cameraTransform.position =
+            glm::vec3(
+                0.0f,
+                0.0f,
+                3.0f);
+
+        cameraTransform.rotation =
+            glm::vec3(
+                0.0f,
+                0.0f,
+                0.0f);
+
+        cameraTransform.scale =
+            glm::vec3(
+                1.0f,
+                1.0f,
+                1.0f);
+
+        // ---------------------------------------------------------
+        // Camera Component
+        // ---------------------------------------------------------
+
+        auto &camera =
+            mainCamera.addComponent<
+                VLTEngine::Components::Camera>();
+
+        camera.setPerspective(
+            glm::radians(60.0f),
+            16.0f / 9.0f,
+            0.1f,
+            100.0f);
+
+        // ---------------------------------------------------------
+        // Set Active Camera
+        // ---------------------------------------------------------
+
+        m_scene->setActiveCamera(
+            &mainCamera);
 
         // =========================================================
         // Renderer Initialized
@@ -472,7 +528,43 @@ namespace VLTEngine::Graphics
                 m_shader)
             {
                 // -------------------------------------------------
-                // Camera Projection
+                // Get Active Camera
+                // -------------------------------------------------
+
+                auto *activeCameraEntity =
+                    m_scene->getActiveCamera();
+
+                if (activeCameraEntity == nullptr)
+                {
+                    SDL_GL_SwapWindow(window);
+                    continue;
+                }
+
+                // -------------------------------------------------
+                // Get Camera Component
+                // -------------------------------------------------
+
+                auto *activeCamera =
+                    activeCameraEntity->getComponent<
+                        VLTEngine::Components::Camera>();
+
+                // -------------------------------------------------
+                // Get Camera Transform
+                // -------------------------------------------------
+
+                auto *cameraTransform =
+                    activeCameraEntity->getComponent<
+                        VLTEngine::Components::Transform>();
+
+                if (activeCamera == nullptr ||
+                    cameraTransform == nullptr)
+                {
+                    SDL_GL_SwapWindow(window);
+                    continue;
+                }
+
+                // -------------------------------------------------
+                // Update Camera Aspect Ratio
                 // -------------------------------------------------
 
                 const float aspectRatio =
@@ -481,20 +573,43 @@ namespace VLTEngine::Graphics
                               static_cast<float>(height)
                         : 1.0f;
 
-                m_camera.setPerspective(
-                    glm::radians(60.0f),
+                activeCamera->setPerspective(
+                    activeCamera->getFieldOfView(),
                     aspectRatio,
-                    0.1f,
-                    100.0f);
-
-                const glm::mat4 viewMatrix =
-                    m_camera.getViewMatrix();
-
-                const glm::mat4 projectionMatrix =
-                    m_camera.getProjectionMatrix();
+                    activeCamera->getNearClip(),
+                    activeCamera->getFarClip());
 
                 // -------------------------------------------------
-                // Iterate Scene Entities
+                // Camera World Matrix
+                // -------------------------------------------------
+
+                const glm::mat4 cameraWorldMatrix =
+                    cameraTransform->getModelMatrix();
+
+                // -------------------------------------------------
+                // View Matrix
+                //
+                // The view matrix is the inverse of the
+                // camera's world transform.
+                // -------------------------------------------------
+
+                const glm::mat4 viewMatrix =
+                    glm::inverse(
+                        cameraWorldMatrix);
+
+                // -------------------------------------------------
+                // Projection Matrix
+                // -------------------------------------------------
+
+                const glm::mat4 projectionMatrix =
+                    glm::perspective(
+                        activeCamera->getFieldOfView(),
+                        activeCamera->getAspectRatio(),
+                        activeCamera->getNearClip(),
+                        activeCamera->getFarClip());
+
+                // -------------------------------------------------
+                // Render Scene Entities
                 // -------------------------------------------------
 
                 for (auto *entity :
