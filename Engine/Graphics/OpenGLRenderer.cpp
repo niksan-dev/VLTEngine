@@ -1,8 +1,8 @@
 #include <Graphics/OpenGLRenderer.hpp>
 
-#include <Components/Camera.hpp>
 #include <Components/MeshRenderer.hpp>
 #include <Components/Transform.hpp>
+#include <Components/Camera.hpp>
 
 #include <Graphics/Mesh/MeshData.hpp>
 #include <Graphics/Mesh/OpenGLMesh.hpp>
@@ -18,9 +18,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
-#include <memory>
 #include <vector>
-
 namespace VLTEngine::Graphics
 {
 
@@ -35,7 +33,8 @@ namespace VLTEngine::Graphics
     }
 
     bool OpenGLRenderer::initialize(
-        const std::vector<SDL_Window *> &windows)
+        const std::vector<SDL_Window *> &windows,
+        VLTEngine::Scene::Scene &scene)
     {
         if (m_initialized)
             return true;
@@ -52,10 +51,6 @@ namespace VLTEngine::Graphics
 
         m_windows = windows;
 
-        // =========================================================
-        // OpenGL Context Configuration
-        // =========================================================
-
         SDL_GL_SetAttribute(
             SDL_GL_CONTEXT_MAJOR_VERSION,
             3);
@@ -71,10 +66,6 @@ namespace VLTEngine::Graphics
         SDL_GL_SetAttribute(
             SDL_GL_DOUBLEBUFFER,
             1);
-
-        // =========================================================
-        // Create OpenGL Contexts
-        // =========================================================
 
         for (std::size_t i = 0;
              i < m_windows.size();
@@ -93,11 +84,13 @@ namespace VLTEngine::Graphics
                     << std::endl;
 
                 shutdown();
+
                 return false;
             }
 
             SDL_GLContext context =
-                SDL_GL_CreateContext(window);
+                SDL_GL_CreateContext(
+                    window);
 
             if (context == nullptr)
             {
@@ -110,6 +103,7 @@ namespace VLTEngine::Graphics
                     << std::endl;
 
                 shutdown();
+
                 return false;
             }
 
@@ -125,19 +119,12 @@ namespace VLTEngine::Graphics
                 contextInfo);
         }
 
-        // =========================================================
-        // Make First Context Current
-        // =========================================================
-
         if (!makeCurrent(0))
         {
             shutdown();
+
             return false;
         }
-
-        // =========================================================
-        // Initialize GLAD
-        // =========================================================
 
         if (!gladLoadGL())
         {
@@ -146,6 +133,7 @@ namespace VLTEngine::Graphics
                 << std::endl;
 
             shutdown();
+
             return false;
         }
 
@@ -170,10 +158,6 @@ namespace VLTEngine::Graphics
             << reinterpret_cast<const char *>(
                    glGetString(GL_VERSION))
             << std::endl;
-
-        // =========================================================
-        // Test Mesh
-        // =========================================================
 
         MeshData meshData;
 
@@ -201,10 +185,6 @@ namespace VLTEngine::Graphics
             std::make_unique<OpenGLMesh>(
                 meshData);
 
-        // =========================================================
-        // Shader
-        // =========================================================
-
         m_shader =
             std::make_unique<OpenGLShader>();
 
@@ -217,12 +197,9 @@ namespace VLTEngine::Graphics
                 << std::endl;
 
             shutdown();
+
             return false;
         }
-
-        // =========================================================
-        // Material
-        // =========================================================
 
         m_material =
             std::make_unique<OpenGLMaterial>(
@@ -234,117 +211,71 @@ namespace VLTEngine::Graphics
             0.2f,
             1.0f);
 
-        // =========================================================
-        // Scene
-        // =========================================================
+        /*
+         * Scene content is now created by Runtime.
+         *
+         * Renderer only connects the test mesh/material
+         * to the existing Triangle entity.
+         */
 
-        m_scene =
-            std::make_unique<
-                VLTEngine::Scene::Scene>();
+        auto *triangle =
+            scene.getEntity(
+                1);
 
-        // =========================================================
-        // Triangle Entity
-        // =========================================================
+        if (triangle != nullptr)
+        {
+            auto *transform =
+                triangle->getComponent<
+                    VLTEngine::Components::Transform>();
 
-        auto &triangle =
-            m_scene->createEntity(
-                "Triangle");
+            if (transform == nullptr)
+            {
+                transform =
+                    &triangle->addComponent<
+                        VLTEngine::Components::Transform>();
+            }
 
-        // ---------------------------------------------------------
-        // Triangle Transform
-        // ---------------------------------------------------------
+            transform->position =
+                glm::vec3(
+                    0.20f,
+                    0.0f,
+                    0.0f);
 
-        auto &transform =
-            triangle.addComponent<
-                VLTEngine::Components::Transform>();
+            transform->rotation.z =
+                glm::radians(
+                    10.0f);
 
-        transform.position =
-            glm::vec3(
-                0.20f,
-                0.0f,
-                0.0f);
+            transform->scale =
+                glm::vec3(
+                    0.80f,
+                    0.80f,
+                    0.80f);
 
-        transform.rotation.z =
-            glm::radians(10.0f);
+            auto *meshRenderer =
+                triangle->getComponent<
+                    VLTEngine::Components::MeshRenderer>();
 
-        transform.scale =
-            glm::vec3(
-                0.80f,
-                0.80f,
-                0.80f);
+            if (meshRenderer == nullptr)
+            {
+                meshRenderer =
+                    &triangle->addComponent<
+                        VLTEngine::Components::MeshRenderer>();
+            }
 
-        // ---------------------------------------------------------
-        // Triangle MeshRenderer
-        // ---------------------------------------------------------
+            meshRenderer->setMesh(
+                m_mesh.get());
 
-        auto &meshRenderer =
-            triangle.addComponent<
-                VLTEngine::Components::MeshRenderer>();
+            meshRenderer->setMaterial(
+                m_material.get());
+        }
 
-        meshRenderer.setMesh(
-            m_mesh.get());
+        /*
+         * Runtime owns the camera.
+         * Renderer only reads the active camera
+         * from the Scene during rendering.
+         */
 
-        meshRenderer.setMaterial(
-            m_material.get());
-
-        // =========================================================
-        // Main Camera Entity
-        // =========================================================
-
-        auto &mainCamera =
-            m_scene->createEntity(
-                "MainCamera");
-
-        // ---------------------------------------------------------
-        // Camera Transform
-        // ---------------------------------------------------------
-
-        auto &cameraTransform =
-            mainCamera.addComponent<
-                VLTEngine::Components::Transform>();
-
-        cameraTransform.position =
-            glm::vec3(
-                0.0f,
-                0.0f,
-                3.0f);
-
-        cameraTransform.rotation =
-            glm::vec3(
-                0.0f,
-                0.0f,
-                0.0f);
-
-        cameraTransform.scale =
-            glm::vec3(
-                1.0f,
-                1.0f,
-                1.0f);
-
-        // ---------------------------------------------------------
-        // Camera Component
-        // ---------------------------------------------------------
-
-        auto &camera =
-            mainCamera.addComponent<
-                VLTEngine::Components::Camera>();
-
-        camera.setPerspective(
-            glm::radians(60.0f),
-            16.0f / 9.0f,
-            0.1f,
-            100.0f);
-
-        // ---------------------------------------------------------
-        // Set Active Camera
-        // ---------------------------------------------------------
-
-        m_scene->setActiveCamera(
-            &mainCamera);
-
-        // =========================================================
-        // Renderer Initialized
-        // =========================================================
+        (void)scene;
 
         m_initialized = true;
 
@@ -362,28 +293,9 @@ namespace VLTEngine::Graphics
             makeCurrent(0);
         }
 
-        // =========================================================
-        // Destroy Scene
-        //
-        // MeshRenderer contains non-owning references to
-        // Mesh and Material, so destroy Scene first.
-        // =========================================================
-
-        m_scene.reset();
-
-        // =========================================================
-        // Destroy GPU Resources
-        // =========================================================
-
         m_material.reset();
-
         m_shader.reset();
-
         m_mesh.reset();
-
-        // =========================================================
-        // Destroy OpenGL Contexts
-        // =========================================================
 
         for (auto &contextInfo :
              m_contexts)
@@ -393,7 +305,8 @@ namespace VLTEngine::Graphics
                 SDL_GL_DeleteContext(
                     contextInfo.context);
 
-                contextInfo.context = nullptr;
+                contextInfo.context =
+                    nullptr;
             }
         }
 
@@ -466,14 +379,11 @@ namespace VLTEngine::Graphics
         return true;
     }
 
-    void OpenGLRenderer::render()
+    void OpenGLRenderer::render(
+        VLTEngine::Scene::Scene &scene)
     {
         if (!m_initialized)
             return;
-
-        // =========================================================
-        // Render Every Display
-        // =========================================================
 
         for (std::size_t i = 0;
              i < m_windows.size();
@@ -496,19 +406,11 @@ namespace VLTEngine::Graphics
                 &width,
                 &height);
 
-            // =====================================================
-            // Viewport
-            // =====================================================
-
             glViewport(
                 0,
                 0,
                 width,
                 height);
-
-            // =====================================================
-            // Clear
-            // =====================================================
 
             glClearColor(
                 0.08f,
@@ -520,201 +422,130 @@ namespace VLTEngine::Graphics
                 GL_COLOR_BUFFER_BIT |
                 GL_DEPTH_BUFFER_BIT);
 
-            // =====================================================
-            // Scene Rendering
-            // =====================================================
-
-            if (m_scene &&
-                m_shader)
+            if (m_shader == nullptr)
             {
-                // -------------------------------------------------
-                // Get Active Camera
-                // -------------------------------------------------
+                SDL_GL_SwapWindow(
+                    window);
 
-                auto *activeCameraEntity =
-                    m_scene->getActiveCamera();
-
-                if (activeCameraEntity == nullptr)
-                {
-                    SDL_GL_SwapWindow(window);
-                    continue;
-                }
-
-                // -------------------------------------------------
-                // Get Camera Component
-                // -------------------------------------------------
-
-                auto *activeCamera =
-                    activeCameraEntity->getComponent<
-                        VLTEngine::Components::Camera>();
-
-                // -------------------------------------------------
-                // Get Camera Transform
-                // -------------------------------------------------
-
-                auto *cameraTransform =
-                    activeCameraEntity->getComponent<
-                        VLTEngine::Components::Transform>();
-
-                if (activeCamera == nullptr ||
-                    cameraTransform == nullptr)
-                {
-                    SDL_GL_SwapWindow(window);
-                    continue;
-                }
-
-                // -------------------------------------------------
-                // Update Camera Aspect Ratio
-                // -------------------------------------------------
-
-                const float aspectRatio =
-                    height > 0
-                        ? static_cast<float>(width) /
-                              static_cast<float>(height)
-                        : 1.0f;
-
-                activeCamera->setPerspective(
-                    activeCamera->getFieldOfView(),
-                    aspectRatio,
-                    activeCamera->getNearClip(),
-                    activeCamera->getFarClip());
-
-                // -------------------------------------------------
-                // Camera World Matrix
-                // -------------------------------------------------
-
-                const glm::mat4 cameraWorldMatrix =
-                    cameraTransform->getModelMatrix();
-
-                // -------------------------------------------------
-                // View Matrix
-                //
-                // The view matrix is the inverse of the
-                // camera's world transform.
-                // -------------------------------------------------
-
-                const glm::mat4 viewMatrix =
-                    glm::inverse(
-                        cameraWorldMatrix);
-
-                // -------------------------------------------------
-                // Projection Matrix
-                // -------------------------------------------------
-
-                const glm::mat4 projectionMatrix =
-                    glm::perspective(
-                        activeCamera->getFieldOfView(),
-                        activeCamera->getAspectRatio(),
-                        activeCamera->getNearClip(),
-                        activeCamera->getFarClip());
-
-                // -------------------------------------------------
-                // Render Scene Entities
-                // -------------------------------------------------
-
-                for (auto *entity :
-                     m_scene->getEntities())
-                {
-                    if (entity == nullptr)
-                        continue;
-
-                    if (!entity->isActive())
-                        continue;
-
-                    // ---------------------------------------------
-                    // Transform
-                    // ---------------------------------------------
-
-                    auto *transform =
-                        entity->getComponent<
-                            VLTEngine::Components::Transform>();
-
-                    // ---------------------------------------------
-                    // MeshRenderer
-                    // ---------------------------------------------
-
-                    auto *meshRenderer =
-                        entity->getComponent<
-                            VLTEngine::Components::MeshRenderer>();
-
-                    if (transform == nullptr ||
-                        meshRenderer == nullptr)
-                    {
-                        continue;
-                    }
-
-                    if (!meshRenderer->isRenderable())
-                        continue;
-
-                    // ---------------------------------------------
-                    // Material
-                    // ---------------------------------------------
-
-                    auto *material =
-                        meshRenderer->getMaterial();
-
-                    if (material == nullptr)
-                        continue;
-
-                    // ---------------------------------------------
-                    // Bind Material
-                    // ---------------------------------------------
-
-                    material->bind();
-
-                    // ---------------------------------------------
-                    // Model Matrix
-                    // ---------------------------------------------
-
-                    const glm::mat4 modelMatrix =
-                        transform->getModelMatrix();
-
-                    m_shader->setMat4(
-                        "uModel",
-                        glm::value_ptr(
-                            modelMatrix));
-
-                    // ---------------------------------------------
-                    // View Matrix
-                    // ---------------------------------------------
-
-                    m_shader->setMat4(
-                        "uView",
-                        glm::value_ptr(
-                            viewMatrix));
-
-                    // ---------------------------------------------
-                    // Projection Matrix
-                    // ---------------------------------------------
-
-                    m_shader->setMat4(
-                        "uProjection",
-                        glm::value_ptr(
-                            projectionMatrix));
-
-                    // ---------------------------------------------
-                    // Draw Mesh
-                    // ---------------------------------------------
-
-                    auto *mesh =
-                        meshRenderer->getMesh();
-
-                    if (mesh != nullptr)
-                    {
-                        mesh->draw();
-                    }
-
-                    // ---------------------------------------------
-                    // Unbind Material
-                    // ---------------------------------------------
-
-                    material->unbind();
-                }
+                continue;
             }
 
-            // =====================================================
-            // Present
-            // =====================================================
+            auto *activeCameraEntity =
+                scene.getActiveCamera();
+
+            if (activeCameraEntity == nullptr)
+            {
+                SDL_GL_SwapWindow(
+                    window);
+
+                continue;
+            }
+
+            auto *camera =
+                activeCameraEntity->getComponent<
+                    VLTEngine::Components::Camera>();
+
+            auto *cameraTransform =
+                activeCameraEntity->getComponent<
+                    VLTEngine::Components::Transform>();
+
+            if (camera == nullptr ||
+                cameraTransform == nullptr)
+            {
+                SDL_GL_SwapWindow(
+                    window);
+
+                continue;
+            }
+
+            const float aspectRatio =
+                height > 0
+                    ? static_cast<float>(width) /
+                          static_cast<float>(height)
+                    : 1.0f;
+
+            camera->setPerspective(
+                camera->getFieldOfView(),
+                aspectRatio,
+                camera->getNearClip(),
+                camera->getFarClip());
+
+            const glm::mat4 cameraWorldMatrix =
+                cameraTransform->getModelMatrix();
+
+            const glm::mat4 viewMatrix =
+                glm::inverse(
+                    cameraWorldMatrix);
+
+            const glm::mat4 projectionMatrix =
+                glm::perspective(
+                    camera->getFieldOfView(),
+                    camera->getAspectRatio(),
+                    camera->getNearClip(),
+                    camera->getFarClip());
+
+            for (auto *entity :
+                 scene.getEntities())
+            {
+                if (entity == nullptr)
+                    continue;
+
+                if (!entity->isActive())
+                    continue;
+
+                auto *transform =
+                    entity->getComponent<
+                        VLTEngine::Components::Transform>();
+
+                auto *meshRenderer =
+                    entity->getComponent<
+                        VLTEngine::Components::MeshRenderer>();
+
+                if (transform == nullptr ||
+                    meshRenderer == nullptr)
+                {
+                    continue;
+                }
+
+                if (!meshRenderer->isRenderable())
+                    continue;
+
+                auto *material =
+                    meshRenderer->getMaterial();
+
+                if (material == nullptr)
+                    continue;
+
+                auto *mesh =
+                    meshRenderer->getMesh();
+
+                if (mesh == nullptr)
+                    continue;
+
+                material->bind();
+
+                const glm::mat4 modelMatrix =
+                    transform->getModelMatrix();
+
+                m_shader->setMat4(
+                    "uModel",
+                    glm::value_ptr(
+                        modelMatrix));
+
+                m_shader->setMat4(
+                    "uView",
+                    glm::value_ptr(
+                        viewMatrix));
+
+                m_shader->setMat4(
+                    "uProjection",
+                    glm::value_ptr(
+                        projectionMatrix));
+
+                mesh->draw();
+
+                material->unbind();
+            }
 
             SDL_GL_SwapWindow(
                 window);

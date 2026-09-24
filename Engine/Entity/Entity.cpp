@@ -26,6 +26,10 @@ namespace VLTEngine::Entity
         m_components.clear();
     }
 
+    // =============================================================
+    // Identity
+    // =============================================================
+
     EntityId Entity::getId() const
     {
         return m_id;
@@ -42,6 +46,10 @@ namespace VLTEngine::Entity
         m_name = name;
     }
 
+    // =============================================================
+    // Active State
+    // =============================================================
+
     bool Entity::isActive() const
     {
         return m_active;
@@ -51,6 +59,38 @@ namespace VLTEngine::Entity
         bool active)
     {
         m_active = active;
+    }
+
+    // =============================================================
+    // Runtime Update
+    // =============================================================
+
+    void Entity::update(
+        float deltaTime)
+    {
+        // ---------------------------------------------------------
+        // Inactive Entity
+        // ---------------------------------------------------------
+
+        if (!m_active)
+            return;
+
+        // ---------------------------------------------------------
+        // Update Components
+        // ---------------------------------------------------------
+
+        for (auto &[type, component] :
+             m_components)
+        {
+            if (component == nullptr)
+                continue;
+
+            if (!component->isEnabled())
+                continue;
+
+            component->onUpdate(
+                deltaTime);
+        }
     }
 
 }

@@ -21,9 +21,9 @@ namespace VLTEngine::Scene
         Scene(const Scene &) = delete;
         Scene &operator=(const Scene &) = delete;
 
-        // ---------------------------------------------------------
+        // ------------------------------------------------------------
         // Entity Management
-        // ---------------------------------------------------------
+        // ------------------------------------------------------------
 
         VLTEngine::Entity::Entity &createEntity(
             const std::string &name = "Entity");
@@ -45,9 +45,16 @@ namespace VLTEngine::Scene
 
         void clear();
 
-        // ---------------------------------------------------------
+        // ------------------------------------------------------------
+        // Scene Update
+        // ------------------------------------------------------------
+
+        void update(
+            float deltaTime);
+
+        // ------------------------------------------------------------
         // Active Camera
-        // ---------------------------------------------------------
+        // ------------------------------------------------------------
 
         void setActiveCamera(
             VLTEngine::Entity::Entity *entity);
@@ -68,13 +75,6 @@ namespace VLTEngine::Scene
         std::vector<
             VLTEngine::Entity::Entity *>
             m_entityList;
-
-        // ---------------------------------------------------------
-        // Active Camera
-        //
-        // Non-owning pointer.
-        // The Scene owns the Entity through m_entities.
-        // ---------------------------------------------------------
 
         VLTEngine::Entity::Entity *m_activeCamera;
     };

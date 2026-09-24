@@ -13,162 +13,187 @@
 namespace VLTEngine::Entity
 {
 
-using EntityId = std::uint64_t;
+    using EntityId = std::uint64_t;
 
-class Entity
-{
-public:
-    Entity(
-        EntityId id,
-        const std::string& name = "Entity");
-
-    ~Entity();
-
-    Entity(const Entity&) = delete;
-    Entity& operator=(const Entity&) = delete;
-
-    EntityId getId() const;
-
-    const std::string& getName() const;
-
-    void setName(
-        const std::string& name);
-
-    bool isActive() const;
-
-    void setActive(
-        bool active);
-
-    template<typename T, typename... Args>
-    T& addComponent(Args&&... args)
+    class Entity
     {
-        static_assert(
-            std::is_base_of_v<Component, T>,
-            "T must derive from Component"
-        );
+    public:
+        Entity(
+            EntityId id,
+            const std::string &name = "Entity");
 
-        const std::type_index type =
-            std::type_index(typeid(T));
+        ~Entity();
 
-        auto existing =
-            m_components.find(type);
+        Entity(const Entity &) = delete;
+        Entity &operator=(const Entity &) = delete;
 
-        if (existing != m_components.end())
+        // =========================================================
+        // Identity
+        // =========================================================
+
+        EntityId getId() const;
+
+        const std::string &getName() const;
+
+        void setName(
+            const std::string &name);
+
+        // =========================================================
+        // Active State
+        // =========================================================
+
+        bool isActive() const;
+
+        void setActive(
+            bool active);
+
+        // =========================================================
+        // Component Management
+        // =========================================================
+
+        template <typename T, typename... Args>
+        T &addComponent(
+            Args &&...args)
         {
-            return *static_cast<T*>(
-                existing->second.get()
-            );
+            static_assert(
+                std::is_base_of_v<
+                    Component,
+                    T>,
+                "T must derive from Component.");
+
+            const std::type_index type =
+                std::type_index(
+                    typeid(T));
+
+            auto existing =
+                m_components.find(type);
+
+            if (existing != m_components.end())
+            {
+                return *static_cast<T *>(
+                    existing->second.get());
+            }
+
+            auto component =
+                std::make_unique<T>(
+                    this,
+                    std::forward<Args>(args)...);
+
+            T *componentPtr =
+                component.get();
+
+            m_components.emplace(
+                type,
+                std::move(component));
+
+            componentPtr->onCreate();
+
+            return *componentPtr;
         }
 
-        auto component =
-            std::make_unique<T>(
-                this,
-                std::forward<Args>(args)...
-            );
+        template <typename T>
+        T *getComponent()
+        {
+            static_assert(
+                std::is_base_of_v<
+                    Component,
+                    T>,
+                "T must derive from Component.");
 
-        T* componentPtr =
-            component.get();
+            const std::type_index type =
+                std::type_index(
+                    typeid(T));
 
-        m_components.emplace(
-            type,
-            std::move(component)
-        );
+            auto iterator =
+                m_components.find(type);
 
-        componentPtr->onCreate();
+            if (iterator == m_components.end())
+                return nullptr;
 
-        return *componentPtr;
-    }
+            return static_cast<T *>(
+                iterator->second.get());
+        }
 
-    template<typename T>
-    T* getComponent()
-    {
-        static_assert(
-            std::is_base_of_v<Component, T>,
-            "T must derive from Component"
-        );
+        template <typename T>
+        const T *getComponent() const
+        {
+            static_assert(
+                std::is_base_of_v<
+                    Component,
+                    T>,
+                "T must derive from Component.");
 
-        const std::type_index type =
-            std::type_index(typeid(T));
+            const std::type_index type =
+                std::type_index(
+                    typeid(T));
 
-        auto iterator =
-            m_components.find(type);
+            auto iterator =
+                m_components.find(type);
 
-        if (iterator == m_components.end())
-            return nullptr;
+            if (iterator == m_components.end())
+                return nullptr;
 
-        return static_cast<T*>(
-            iterator->second.get()
-        );
-    }
+            return static_cast<const T *>(
+                iterator->second.get());
+        }
 
-    template<typename T>
-    const T* getComponent() const
-    {
-        static_assert(
-            std::is_base_of_v<Component, T>,
-            "T must derive from Component"
-        );
+        template <typename T>
+        bool hasComponent() const
+        {
+            static_assert(
+                std::is_base_of_v<
+                    Component,
+                    T>,
+                "T must derive from Component.");
 
-        const std::type_index type =
-            std::type_index(typeid(T));
+            return m_components.find(
+                       std::type_index(typeid(T))) != m_components.end();
+        }
 
-        auto iterator =
-            m_components.find(type);
+        template <typename T>
+        bool removeComponent()
+        {
+            static_assert(
+                std::is_base_of_v<
+                    Component,
+                    T>,
+                "T must derive from Component.");
 
-        if (iterator == m_components.end())
-            return nullptr;
+            const std::type_index type =
+                std::type_index(
+                    typeid(T));
 
-        return static_cast<const T*>(
-            iterator->second.get()
-        );
-    }
+            auto iterator =
+                m_components.find(type);
 
-    template<typename T>
-    bool hasComponent() const
-    {
-        static_assert(
-            std::is_base_of_v<Component, T>,
-            "T must derive from Component"
-        );
+            if (iterator == m_components.end())
+                return false;
 
-        return m_components.find(
-            std::type_index(typeid(T))
-        ) != m_components.end();
-    }
+            iterator->second->onDestroy();
 
-    template<typename T>
-    bool removeComponent()
-    {
-        static_assert(
-            std::is_base_of_v<Component, T>,
-            "T must derive from Component"
-        );
+            m_components.erase(iterator);
 
-        const std::type_index type =
-            std::type_index(typeid(T));
+            return true;
+        }
 
-        auto iterator =
-            m_components.find(type);
+        // =========================================================
+        // Runtime Update
+        // =========================================================
 
-        if (iterator == m_components.end())
-            return false;
+        void update(
+            float deltaTime);
 
-        iterator->second->onDestroy();
+    private:
+        EntityId m_id;
 
-        m_components.erase(iterator);
+        std::string m_name;
 
-        return true;
-    }
+        bool m_active;
 
-private:
-    EntityId m_id;
-    std::string m_name;
-    bool m_active;
-
-    std::unordered_map<
-        std::type_index,
-        std::unique_ptr<Component>
-    > m_components;
-};
+        std::unordered_map<
+            std::type_index,
+            std::unique_ptr<Component>>
+            m_components;
+    };
 
 }

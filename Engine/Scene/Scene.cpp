@@ -17,6 +17,10 @@ namespace VLTEngine::Scene
         clear();
     }
 
+    // ================================================================
+    // Entity Management
+    // ================================================================
+
     VLTEngine::Entity::Entity &Scene::createEntity(
         const std::string &name)
     {
@@ -52,18 +56,10 @@ namespace VLTEngine::Scene
         auto *entity =
             iterator->second.get();
 
-        // ---------------------------------------------------------
-        // Clear Active Camera
-        // ---------------------------------------------------------
-
         if (m_activeCamera == entity)
         {
             m_activeCamera = nullptr;
         }
-
-        // ---------------------------------------------------------
-        // Remove From Entity List
-        // ---------------------------------------------------------
 
         auto listIterator =
             std::find(
@@ -76,10 +72,6 @@ namespace VLTEngine::Scene
             m_entityList.erase(
                 listIterator);
         }
-
-        // ---------------------------------------------------------
-        // Destroy Entity
-        // ---------------------------------------------------------
 
         m_entities.erase(
             iterator);
@@ -99,7 +91,8 @@ namespace VLTEngine::Scene
         return iterator->second.get();
     }
 
-    const VLTEngine::Entity::Entity *Scene::getEntity(
+    const VLTEngine::Entity::Entity *
+    Scene::getEntity(
         VLTEngine::Entity::EntityId id) const
     {
         auto iterator =
@@ -134,9 +127,29 @@ namespace VLTEngine::Scene
         m_nextEntityId = 1;
     }
 
-    // =============================================================
+    // ================================================================
+    // Scene Update
+    // ================================================================
+
+    void Scene::update(
+        float deltaTime)
+    {
+        for (auto *entity : m_entityList)
+        {
+            if (entity == nullptr)
+                continue;
+
+            if (!entity->isActive())
+                continue;
+
+            entity->update(
+                deltaTime);
+        }
+    }
+
+    // ================================================================
     // Active Camera
-    // =============================================================
+    // ================================================================
 
     void Scene::setActiveCamera(
         VLTEngine::Entity::Entity *entity)
@@ -146,10 +159,6 @@ namespace VLTEngine::Scene
             m_activeCamera = nullptr;
             return;
         }
-
-        // ---------------------------------------------------------
-        // Only allow an Entity owned by this Scene.
-        // ---------------------------------------------------------
 
         const auto entityId =
             entity->getId();

@@ -1,18 +1,18 @@
 #include <Core/Engine.hpp>
+
 #include <Graphics/OpenGLRenderer.hpp>
 
 #include <SDL2/SDL.h>
 
+#include <chrono>
 #include <iostream>
-#include <memory>
 #include <vector>
 
 namespace VLTEngine::Core
 {
 
     Engine::Engine()
-        : m_initialized(false),
-          m_renderer(nullptr)
+        : m_initialized(false)
     {
     }
 
@@ -26,15 +26,10 @@ namespace VLTEngine::Core
         if (m_initialized)
             return true;
 
-        std::cout
-            << "VLTEngine initializing..."
-            << std::endl;
-
-        // -------------------------------------------------
-        // Initialize SDL
-        // -------------------------------------------------
-
-        if (SDL_Init(SDL_INIT_VIDEO) != 0)
+        if (SDL_Init(
+                SDL_INIT_VIDEO |
+                SDL_INIT_AUDIO |
+                SDL_INIT_EVENTS) != 0)
         {
             std::cerr
                 << "SDL initialization failed: "
@@ -44,114 +39,64 @@ namespace VLTEngine::Core
             return false;
         }
 
-        // -------------------------------------------------
-        // Initialize Display Manager
-        // -------------------------------------------------
-
         if (!m_displayManager.initialize())
         {
+            std::cerr
+                << "DisplayManager initialization failed."
+                << std::endl;
+
             SDL_Quit();
+
             return false;
         }
-
-        // -------------------------------------------------
-        // Print detected displays
-        // -------------------------------------------------
-
-        std::cout
-            << "Detected displays: "
-            << m_displayManager.getDisplayCount()
-            << std::endl;
-
-        for (const auto &display :
-             m_displayManager.getDisplays())
-        {
-            std::cout
-                << "  Display "
-                << display.id + 1
-                << ": "
-                << display.name
-                << " | "
-                << display.width
-                << "x"
-                << display.height
-                << " | Position: ("
-                << display.x
-                << ", "
-                << display.y
-                << ")";
-
-            if (display.primary)
-            {
-                std::cout
-                    << " | PRIMARY";
-            }
-
-            std::cout << std::endl;
-        }
-
-        // -------------------------------------------------
-        // Prepare window bounds
-        // -------------------------------------------------
 
         std::vector<SDL_Rect> displayBounds;
 
         for (const auto &display :
              m_displayManager.getDisplays())
         {
-            SDL_Rect bounds{};
+            SDL_Rect bounds;
 
             bounds.x = display.x;
             bounds.y = display.y;
             bounds.w = display.width;
             bounds.h = display.height;
 
-            displayBounds.push_back(bounds);
+            displayBounds.push_back(
+                bounds);
         }
-
-        // -------------------------------------------------
-        // Create one window per display
-        // -------------------------------------------------
 
         if (!m_windowManager.initialize(
                 "VLTEngine",
                 displayBounds))
         {
+            std::cerr
+                << "WindowManager initialization failed."
+                << std::endl;
+
             m_displayManager.shutdown();
             SDL_Quit();
 
             return false;
         }
 
-        // -------------------------------------------------
-        // Collect SDL windows
-        // -------------------------------------------------
-
-        std::vector<SDL_Window *> windows;
-
-        for (const auto &windowInfo :
-             m_windowManager.getWindows())
-        {
-            windows.push_back(
-                windowInfo.window);
-        }
-
-        // -------------------------------------------------
-        // Create OpenGL renderer
-        // -------------------------------------------------
-
-        m_renderer =
+        m_scene =
             std::make_unique<
-                VLTEngine::Graphics::OpenGLRenderer>();
+                VLTEngine::Scene::Scene>();
 
-        // -------------------------------------------------
-        // Initialize renderer
-        // -------------------------------------------------
-
-        if (!m_renderer->initialize(windows))
+        /*
+         * Runtime
+         *
+         * Creates and configures scene content.
+         */
+        if (!m_runtime.initialize(
+                *m_scene))
         {
-            m_renderer.reset();
+            std::cerr
+                << "Runtime initialization failed."
+                << std::endl;
 
+            m_scene.reset();
             m_windowManager.shutdown();
             m_displayManager.shutdown();
             SDL_Quit();
@@ -159,9 +104,43 @@ namespace VLTEngine::Core
             return false;
         }
 
-        // -------------------------------------------------
-        // Engine initialized
-        // -------------------------------------------------
+        std::vector<SDL_Window *> windows;
+
+        for (const auto &windowInfo :
+             m_windowManager.getWindows())
+        {
+            if (windowInfo.window != nullptr)
+            {
+                windows.push_back(
+                    windowInfo.window);
+            }
+        }
+
+        m_renderer =
+            std::make_unique<
+                VLTEngine::Graphics::OpenGLRenderer>();
+
+        if (!m_renderer->initialize(
+                windows,
+                *m_scene))
+        {
+            std::cerr
+                << "Renderer initialization failed."
+                << std::endl;
+
+            m_renderer.reset();
+
+            m_runtime.shutdown();
+
+            m_scene.reset();
+
+            m_windowManager.shutdown();
+            m_displayManager.shutdown();
+
+            SDL_Quit();
+
+            return false;
+        }
 
         m_initialized = true;
 
@@ -179,42 +158,56 @@ namespace VLTEngine::Core
 
         bool running = true;
 
-        SDL_Event event{};
+        using Clock =
+            std::chrono::steady_clock;
+
+        auto previousTime =
+            Clock::now();
 
         while (running)
         {
-            // -------------------------------------------------
-            // Process Events
-            // -------------------------------------------------
+            const auto currentTime =
+                Clock::now();
+
+            const std::chrono::duration<float>
+                elapsed =
+                    currentTime -
+                    previousTime;
+
+            const float deltaTime =
+                elapsed.count();
+
+            previousTime =
+                currentTime;
+
+            SDL_Event event;
 
             while (SDL_PollEvent(&event))
             {
-                if (event.type == SDL_QUIT)
+                if (event.type ==
+                    SDL_QUIT)
                 {
                     running = false;
                 }
 
-                m_displayManager.handleEvent(&event);
+                if (event.type ==
+                    SDL_DISPLAYEVENT)
+                {
+                    m_displayManager.handleEvent(
+                        &event);
+                }
             }
 
-            // -------------------------------------------------
-            // Update
-            // -------------------------------------------------
-
-            // Future:
-            // Scene update
-            // Entity update
-            // Physics
-            // Animation
-            // Game logic
-
-            // -------------------------------------------------
-            // Render
-            // -------------------------------------------------
+            if (m_scene)
+            {
+                m_scene->update(
+                    deltaTime);
+            }
 
             if (m_renderer)
             {
-                m_renderer->render();
+                m_renderer->render(
+                    *m_scene);
             }
         }
     }
@@ -224,19 +217,16 @@ namespace VLTEngine::Core
         if (!m_initialized)
             return;
 
-        std::cout
-            << "VLTEngine shutting down..."
-            << std::endl;
-
-        // -------------------------------------------------
-        // Reverse initialization order
-        // -------------------------------------------------
-
         if (m_renderer)
         {
             m_renderer->shutdown();
+
             m_renderer.reset();
         }
+
+        m_runtime.shutdown();
+
+        m_scene.reset();
 
         m_windowManager.shutdown();
 
@@ -247,4 +237,4 @@ namespace VLTEngine::Core
         m_initialized = false;
     }
 
-} // namespace VLTEngine::Core
+}
