@@ -1,14 +1,12 @@
 #include <Scene/Scene.hpp>
 
 #include <algorithm>
-#include <utility>
 
 namespace VLTEngine::Scene
 {
 
     Scene::Scene()
-        : m_nextEntityId(1),
-          m_activeCamera(nullptr)
+        : m_nextEntityId(1), m_activeCamera(nullptr)
     {
     }
 
@@ -16,10 +14,6 @@ namespace VLTEngine::Scene
     {
         clear();
     }
-
-    // ================================================================
-    // Entity Management
-    // ================================================================
 
     VLTEngine::Entity::Entity &Scene::createEntity(
         const std::string &name)
@@ -32,7 +26,8 @@ namespace VLTEngine::Scene
                 id,
                 name);
 
-        auto *entityPtr = entity.get();
+        auto *entityPtr =
+            entity.get();
 
         m_entities.emplace(
             id,
@@ -56,25 +51,19 @@ namespace VLTEngine::Scene
         auto *entity =
             iterator->second.get();
 
-        if (m_activeCamera == entity)
+        if (entity == m_activeCamera)
         {
             m_activeCamera = nullptr;
         }
 
-        auto listIterator =
-            std::find(
+        m_entityList.erase(
+            std::remove(
                 m_entityList.begin(),
                 m_entityList.end(),
-                entity);
+                entity),
+            m_entityList.end());
 
-        if (listIterator != m_entityList.end())
-        {
-            m_entityList.erase(
-                listIterator);
-        }
-
-        m_entities.erase(
-            iterator);
+        m_entities.erase(iterator);
 
         return true;
     }
@@ -91,8 +80,7 @@ namespace VLTEngine::Scene
         return iterator->second.get();
     }
 
-    const VLTEngine::Entity::Entity *
-    Scene::getEntity(
+    const VLTEngine::Entity::Entity *Scene::getEntity(
         VLTEngine::Entity::EntityId id) const
     {
         auto iterator =
@@ -102,6 +90,36 @@ namespace VLTEngine::Scene
             return nullptr;
 
         return iterator->second.get();
+    }
+
+    VLTEngine::Entity::Entity *Scene::getEntityByName(
+        const std::string &name)
+    {
+        for (auto *entity : m_entityList)
+        {
+            if (entity == nullptr)
+                continue;
+
+            if (entity->getName() == name)
+                return entity;
+        }
+
+        return nullptr;
+    }
+
+    const VLTEngine::Entity::Entity *Scene::getEntityByName(
+        const std::string &name) const
+    {
+        for (const auto *entity : m_entityList)
+        {
+            if (entity == nullptr)
+                continue;
+
+            if (entity->getName() == name)
+                return entity;
+        }
+
+        return nullptr;
     }
 
     const std::vector<
@@ -118,18 +136,12 @@ namespace VLTEngine::Scene
 
     void Scene::clear()
     {
-        m_activeCamera = nullptr;
+        m_entities.clear();
 
         m_entityList.clear();
 
-        m_entities.clear();
-
-        m_nextEntityId = 1;
+        m_activeCamera = nullptr;
     }
-
-    // ================================================================
-    // Scene Update
-    // ================================================================
 
     void Scene::update(
         float deltaTime)
@@ -142,14 +154,9 @@ namespace VLTEngine::Scene
             if (!entity->isActive())
                 continue;
 
-            entity->update(
-                deltaTime);
+            entity->update(deltaTime);
         }
     }
-
-    // ================================================================
-    // Active Camera
-    // ================================================================
 
     void Scene::setActiveCamera(
         VLTEngine::Entity::Entity *entity)
@@ -160,11 +167,9 @@ namespace VLTEngine::Scene
             return;
         }
 
-        const auto entityId =
-            entity->getId();
-
         auto iterator =
-            m_entities.find(entityId);
+            m_entities.find(
+                entity->getId());
 
         if (iterator == m_entities.end())
         {
@@ -179,14 +184,12 @@ namespace VLTEngine::Scene
         m_activeCamera = entity;
     }
 
-    VLTEngine::Entity::Entity *
-    Scene::getActiveCamera()
+    VLTEngine::Entity::Entity *Scene::getActiveCamera()
     {
         return m_activeCamera;
     }
 
-    const VLTEngine::Entity::Entity *
-    Scene::getActiveCamera() const
+    const VLTEngine::Entity::Entity *Scene::getActiveCamera() const
     {
         return m_activeCamera;
     }

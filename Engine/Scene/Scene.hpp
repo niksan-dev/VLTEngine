@@ -21,10 +21,6 @@ namespace VLTEngine::Scene
         Scene(const Scene &) = delete;
         Scene &operator=(const Scene &) = delete;
 
-        // ------------------------------------------------------------
-        // Entity Management
-        // ------------------------------------------------------------
-
         VLTEngine::Entity::Entity &createEntity(
             const std::string &name = "Entity");
 
@@ -37,6 +33,12 @@ namespace VLTEngine::Scene
         const VLTEngine::Entity::Entity *getEntity(
             VLTEngine::Entity::EntityId id) const;
 
+        VLTEngine::Entity::Entity *getEntityByName(
+            const std::string &name);
+
+        const VLTEngine::Entity::Entity *getEntityByName(
+            const std::string &name) const;
+
         const std::vector<
             VLTEngine::Entity::Entity *> &
         getEntities() const;
@@ -45,16 +47,8 @@ namespace VLTEngine::Scene
 
         void clear();
 
-        // ------------------------------------------------------------
-        // Scene Update
-        // ------------------------------------------------------------
-
         void update(
             float deltaTime);
-
-        // ------------------------------------------------------------
-        // Active Camera
-        // ------------------------------------------------------------
 
         void setActiveCamera(
             VLTEngine::Entity::Entity *entity);

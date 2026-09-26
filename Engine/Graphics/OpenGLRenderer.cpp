@@ -1,5 +1,4 @@
-#include <Graphics/OpenGLRenderer.hpp>
-
+#include "OpenGLRenderer.hpp"
 #include <Components/MeshRenderer.hpp>
 #include <Components/Transform.hpp>
 #include <Components/Camera.hpp>
@@ -19,6 +18,7 @@
 
 #include <iostream>
 #include <vector>
+
 namespace VLTEngine::Graphics
 {
 
@@ -212,45 +212,18 @@ namespace VLTEngine::Graphics
             1.0f);
 
         /*
-         * Scene content is now created by Runtime.
+         * Scene content is created by Runtime.
          *
          * Renderer only connects the test mesh/material
          * to the existing Triangle entity.
          */
 
         auto *triangle =
-            scene.getEntity(
-                1);
+            scene.getEntityByName(
+                "Triangle");
 
         if (triangle != nullptr)
         {
-            auto *transform =
-                triangle->getComponent<
-                    VLTEngine::Components::Transform>();
-
-            if (transform == nullptr)
-            {
-                transform =
-                    &triangle->addComponent<
-                        VLTEngine::Components::Transform>();
-            }
-
-            transform->position =
-                glm::vec3(
-                    0.20f,
-                    0.0f,
-                    0.0f);
-
-            transform->rotation.z =
-                glm::radians(
-                    10.0f);
-
-            transform->scale =
-                glm::vec3(
-                    0.80f,
-                    0.80f,
-                    0.80f);
-
             auto *meshRenderer =
                 triangle->getComponent<
                     VLTEngine::Components::MeshRenderer>();
@@ -271,8 +244,10 @@ namespace VLTEngine::Graphics
 
         /*
          * Runtime owns the camera.
+         * Runtime also owns entity transforms.
+         *
          * Renderer only reads the active camera
-         * from the Scene during rendering.
+         * and transforms from the Scene during rendering.
          */
 
         (void)scene;
@@ -484,8 +459,7 @@ namespace VLTEngine::Graphics
                     camera->getNearClip(),
                     camera->getFarClip());
 
-            for (auto *entity :
-                 scene.getEntities())
+            for (auto *entity : scene.getEntities())
             {
                 if (entity == nullptr)
                     continue;
